@@ -2,7 +2,6 @@
 
 echo "Setting up docker env..."
 echo "MODE: $MODE"
-echo "USE_NEW_DESIGN: $USE_NEW_DESIGN"
 echo "SERVER_LIST_URL: $SERVER_LIST_URL"
 echo "WEBPORT: $WEBPORT"
 echo "REDACT_IP_ADDRESSES: $REDACT_IP_ADDRESSES"
@@ -36,10 +35,6 @@ rm -rf /var/www/html/*
 # Copy frontend files
 cp /speedtest/*.js /var/www/html/
 cp /speedtest/stability.html /var/www/html/
-
-# Copy design switch files
-cp /speedtest/config.json /var/www/html/
-cp /speedtest/design-switch.js /var/www/html/
 
 # Copy PWA metadata and icons
 cp /speedtest/favicon.ico /var/www/html/
@@ -77,10 +72,8 @@ fi
 
 # Set up index.php for frontend-only or standalone modes
 if [[ "$MODE" == "frontend" || "$MODE" == "dual" ||  "$MODE" == "standalone" ]]; then
-  # Copy design files (switcher + both designs)
+  # Copy the page. There is a single design now: the Terminal/CRT frontend.
   cp /speedtest/index.html /var/www/html/
-  cp /speedtest/index-classic.html /var/www/html/
-  cp /speedtest/index-modern.html /var/www/html/
   cp /speedtest/stability.html /var/www/html/
   # Keep the frontend assets under frontend/, which is where the HTML looks for
   # them and where they sit in the repository
@@ -104,8 +97,7 @@ if [[ "$MODE" == "frontend" || "$MODE" == "dual" ||  "$MODE" == "standalone" ]];
   if [ ! -z "$SERVER_LIST_URL" ]; then
     echo "using SERVER_LIST_URL for frontend server list"
     SERVER_LIST_URL_ESCAPED=$(printf '%s\n' "$SERVER_LIST_URL" | sed 's/[&/\\]/\\&/g; s/\$/\\$/g')
-    sed -i "s/var SPEEDTEST_SERVERS = \"server-list.json\";/var SPEEDTEST_SERVERS = \"$SERVER_LIST_URL_ESCAPED\";/" /var/www/html/index-modern.html
-    sed -i "/var SPEEDTEST_SERVERS = \\[/,/^[[:space:]]*];/c\\\t\tvar SPEEDTEST_SERVERS = \"$SERVER_LIST_URL_ESCAPED\";" /var/www/html/index-classic.html
+    sed -i "s/var SPEEDTEST_SERVERS = \"server-list.json\";/var SPEEDTEST_SERVERS = \"$SERVER_LIST_URL_ESCAPED\";/" /var/www/html/index.html
     sed -i "s/var SPEEDTEST_SERVERS = \"server-list.json\";/var SPEEDTEST_SERVERS = \"$SERVER_LIST_URL_ESCAPED\";/" /var/www/html/stability.html
   fi
 
@@ -120,18 +112,16 @@ if [[ "$MODE" == "frontend" || "$MODE" == "dual" ||  "$MODE" == "standalone" ]];
     TITLE_ONE_LINE=${TITLE_ONE_LINE//$'\n'/ }
     TITLE_HTML_ESCAPED=$(html_escape "$TITLE_ONE_LINE")
     TITLE_ESCAPED=$(sed_escape "$TITLE_HTML_ESCAPED")
-    sed -i "s/<title>LibreSpeed<\\/title>/<title>$TITLE_ESCAPED<\\/title>/g; s/<h1>LibreSpeed<\\/h1>/<h1>$TITLE_ESCAPED<\\/h1>/g" /var/www/html/index-classic.html
-    sed -i "s/<title>LibreSpeed<\\/title>/<title>$TITLE_ESCAPED<\\/title>/g" /var/www/html/index.html
-    sed -i "s/<title>LibreSpeed - Free and Open Source Speedtest<\\/title>/<title>$TITLE_ESCAPED - Free and Open Source Speedtest<\\/title>/g; s/<h1>Free and Open Source Speedtest\\.<\\/h1>/<h1>$TITLE_ESCAPED<\\/h1>/g" /var/www/html/index-modern.html
+    sed -i "s/<title>LibreSpeed<\\/title>/<title>$TITLE_ESCAPED<\\/title>/g; s/<h1>Free and Open Source Speedtest\\.<\\/h1>/<h1>$TITLE_ESCAPED<\\/h1>/g" /var/www/html/index.html
   fi
 
-  # Replace modern page tagline if TAGLINE is set
+  # Replace the tagline if TAGLINE is set
   if [ -n "$TAGLINE" ]; then
     TAGLINE_ONE_LINE=${TAGLINE//$'\r'/}
     TAGLINE_ONE_LINE=${TAGLINE_ONE_LINE//$'\n'/ }
     TAGLINE_HTML_ESCAPED=$(html_escape "$TAGLINE_ONE_LINE")
     TAGLINE_ESCAPED=$(sed_escape "$TAGLINE_HTML_ESCAPED")
-    sed -i "s/<p class=\"tagline\">No Flash, No Java, No Websockets, No Bullsh\\*t<\\/p>/<p class=\"tagline\">$TAGLINE_ESCAPED<\\/p>/g" /var/www/html/index-modern.html
+    sed -i "s/<p class=\"tagline\">No Flash, No Java, No Websockets, No Bullsh\\*t<\\/p>/<p class=\"tagline\">$TAGLINE_ESCAPED<\\/p>/g" /var/www/html/index.html
   fi
 
   # Support legacy EMAIL env var as fallback for GDPR_EMAIL
@@ -146,16 +136,12 @@ if [[ "$MODE" == "frontend" || "$MODE" == "dual" ||  "$MODE" == "standalone" ]];
     # Escape special sed characters: & (replacement), / (delimiter), \ (escape), $ (variable)
     GDPR_EMAIL_ESCAPED=$(printf '%s\n' "$GDPR_EMAIL" | sed 's/[&/\\]/\\&/g; s/\$/\\$/g')
 
-    for html_file in /var/www/html/index-modern.html /var/www/html/index-classic.html; do
+    for html_file in /var/www/html/index.html; do
       if [ -f "$html_file" ]; then
         sed -i "s/TO BE FILLED BY DEVELOPER/$GDPR_EMAIL_ESCAPED/g; s/PUT@YOUR_EMAIL.HERE/$GDPR_EMAIL_ESCAPED/g" "$html_file"
       fi
     done
   fi
-fi
-# Configure design preference via config.json
-if [ "$USE_NEW_DESIGN" == "true" ]; then
-  sed -i 's/"useNewDesign": false/"useNewDesign": true/' /var/www/html/config.json
 fi
 
 # Apply Telemetry settings when running in standalone or frontend mode and telemetry is enabled

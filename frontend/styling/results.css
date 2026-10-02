@@ -9,29 +9,39 @@
 
 /* Layout for the gauges */
 
+/**
+ * Two columns, two rows:
+ *
+ *     download | upload
+ *     ping     | jitter
+ *
+ * A grid rather than a flex row, so the gauges stay centred whether or not the
+ * readouts underneath them are visible: as a flex row, the ping and jitter
+ * boxes widened the line past its parent and the overflow stopped being
+ * centred. `width: 100%` matters too - the layout is a flex item of `main`, so
+ * without it the box shrink-wraps its content and a too-wide row drifts right.
+ */
+
 .gauge-layout {
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  grid-template-areas:
+    "download upload"
+    "ping jitter";
+  justify-items: center;
   align-items: start;
   justify-content: center;
-  gap: 5rem;
+  gap: 1rem 5rem;
+  width: 100%;
   margin: 5rem auto 3rem auto;
 
   @media screen and (max-width: 1100px) {
-    display: grid;
-    grid-template-areas:
-      "download upload"
-      "ping jitter";
-    justify-items: center;
-    justify-content: center;
-
     --gauge-width: min(40vw, 32rem);
     --gauge-height: min(28vw, 22rem);
     --progress-width: min(1.2vw, 0.6rem);
     --speed-width: min(4vw, 3rem);
   }
   @media screen and (max-width: 500px) {
-    gap: 5rem 2rem;
+    gap: 1rem 2rem;
   }
 }
 
@@ -80,6 +90,8 @@ div.gauge {
     }
   }
 
+  /* The static track: a dim phosphor arc */
+
   & > .progress {
     &:before,
     &:after {
@@ -106,6 +118,8 @@ div.gauge {
       transform-origin: top center;
     }
   }
+
+  /* The moving needle arc */
 
   & > .speed {
     &:before,
@@ -144,35 +158,41 @@ div.gauge {
     }
   }
 
+  /* Live values: the track lights up while the test runs */
+
   &.enabled {
     &.download {
       & > .progress:after {
-        border-color: var(--theme-pink);
+        border-color: var(--gauge-download-color);
       }
       & > .speed {
         &:before {
           border-right-color: var(--gauge-pointer-pink);
         }
         &:after {
-          border-color: var(--theme-pink);
+          border-color: var(--gauge-download-color);
         }
       }
     }
     &.upload {
       & > .progress:after {
-        border-color: var(--theme-green);
+        border-color: var(--gauge-upload-color);
       }
       & > .speed {
         &:before {
           border-right-color: var(--gauge-pointer-green);
         }
         &:after {
-          border-color: var(--theme-green);
+          border-color: var(--gauge-upload-color);
         }
       }
     }
     & > h1 > span {
       color: var(--primary-text-color);
+      text-shadow: 0 0 1.6rem rgb(var(--crt-phosphor) / 45%);
+    }
+    & > h2 {
+      color: var(--secondary-text-color);
     }
   }
 
@@ -181,26 +201,32 @@ div.gauge {
     display: block;
     position: absolute;
     width: 100%;
-    font-family: "Inter", sans-serif;
-    font-size: 2.1rem;
-    letter-spacing: -0.1rem;
+    font-size: 1.9rem;
     color: var(--secondary-text-color);
   }
+
   & > h1 {
     bottom: calc(var(--gauge-height) - var(--gauge-width) / 2);
     font-weight: 300;
+    letter-spacing: 0.04em;
 
     & > span {
-      font-size: 5.5rem;
-      font-weight: 200;
       display: block;
+      margin-bottom: 0.2rem;
+      font-size: 5.4rem;
+      font-weight: 200;
+      line-height: 1;
       color: var(--secondary-text-color);
-      letter-spacing: -0.3rem;
+      /* Tabular figures keep the number from dancing as digits change */
+      font-variant-numeric: tabular-nums;
     }
   }
+
   & > h2 {
     bottom: 0;
-    font-weight: 700;
+    font-weight: 400;
+    font-size: 1.5rem;
+    letter-spacing: 0.22em;
     text-transform: uppercase;
   }
 
@@ -214,47 +240,46 @@ div.gauge {
     }
 
     & > h2 {
-      font-size: 3vw;
+      font-size: 2.4vw;
+      letter-spacing: 0.12em;
     }
   }
 }
 
-/* Styling for Ping and Jitter */
+/* Ping and jitter, one readout centred under each gauge */
 
 .ping,
 .jitter {
-  grid-area: jitter;
-  display: flex;
-  align-items: end;
-  height: calc(var(--gauge-width) / 2);
-  width: 13rem;
+  width: 100%;
+  text-align: center;
 
-  font-size: 2.1rem;
-  letter-spacing: -0.1rem;
-  font-weight: 300;
+  font-size: 1.7rem;
+  line-height: 2.6rem;
   color: var(--ping-and-jitter-secondary-text-color);
 
   & > .label {
-    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
   }
   & > .value {
     color: var(--ping-and-jitter-primary-text-color);
+    font-variant-numeric: tabular-nums;
   }
 
-  &.hidden {
-    display: none;
-  }
+  /* They start hidden and the script reveals them once the test has reported
+     them; `.hidden` (display: none) comes from Tailwind. With both gone the
+     second grid row collapses to nothing. */
 
-  @media screen and (max-width: 1100px) {
-    width: 100%;
-    height: auto;
-    justify-content: center !important;
-  }
   @media screen and (max-width: 500px) {
-    font-size: 1.8rem;
+    font-size: 1.5rem;
+    line-height: 2.2rem;
   }
 }
+
 .ping {
   grid-area: ping;
-  justify-content: end;
+}
+
+.jitter {
+  grid-area: jitter;
 }

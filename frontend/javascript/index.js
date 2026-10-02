@@ -41,9 +41,13 @@ function createSpeedtest() {
   testState.speedtest.onupdate = (data) => {
     testState.testData = data;
     testState.testDataDirty = true;
+    // Feed the realtime plot (frontend/javascript/realtime-chart.js)
+    if (window.RealtimeChart) window.RealtimeChart.push(data);
   };
-  testState.speedtest.onend = (aborted) =>
-    (testState.state = aborted ? READY : FINISHED);
+  testState.speedtest.onend = (aborted) => {
+    testState.state = aborted ? READY : FINISHED;
+    if (window.RealtimeChart) window.RealtimeChart.end();
+  };
 }
 
 /**
@@ -85,6 +89,8 @@ function startButtonClickHandler() {
       testState.speedtest.start();
       testState.initialGaugeScrollPending = true;
       testState.state = RUNNING;
+      // New run: wipe the previous plot before the first samples arrive
+      if (window.RealtimeChart) window.RealtimeChart.begin();
       return;
     case RUNNING:
       testState.speedtest.abort();
@@ -317,6 +323,7 @@ function startRenderingLoop() {
   const sponsor = serverSelector.querySelector("#sponsor");
   const startButton = document.querySelector("#start-button");
   const privacyWarning = document.querySelector("#privacy-warning");
+  const headerStatus = document.querySelector("#header-status");
 
   const gauges = document.querySelectorAll("#download-gauge, #upload-gauge");
   const downloadProgress = document.querySelector("#download-gauge .progress");
@@ -340,6 +347,14 @@ function startRenderingLoop() {
     [FINISHED]: "Restart",
   };
 
+  // The status readout in the header, same four states
+  const statusTexts = {
+    [INITIALIZING]: "linking...",
+    [READY]: "terminal ready",
+    [RUNNING]: "test running",
+    [FINISHED]: "test complete",
+  };
+
   // Show copy link button only if navigator.clipboard is available
   copyLink.classList.toggle("hidden", !navigator.clipboard);
 
@@ -348,6 +363,11 @@ function startRenderingLoop() {
     startButton.textContent = buttonTexts[testState.state];
     startButton.classList.toggle("disabled", testState.state === INITIALIZING);
     startButton.classList.toggle("active", testState.state === RUNNING);
+
+    // Mirror it in the header status readout
+    if (headerStatus) {
+      headerStatus.textContent = statusTexts[testState.state];
+    }
 
     // Disable the server selector while test is running
     serverSelector.classList.toggle("disabled", testState.state === RUNNING);

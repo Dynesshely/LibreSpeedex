@@ -4,6 +4,8 @@
   "description": "LibreSpeed - A Free and Open Source speed test that you can host on your server(s)",
   "main": "speedtest.js",
   "scripts": {
+    "css": "tailwindcss -i frontend/styling/tailwind.src.css -o frontend/styling/tailwind.css --minify",
+    "css:watch": "tailwindcss -i frontend/styling/tailwind.src.css -o frontend/styling/tailwind.css --watch",
     "test": "echo \"No automated tests configured yet\" && exit 0",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
@@ -41,7 +43,8 @@
   "devDependencies": {
     "@playwright/test": "^1.55.0",
     "eslint": "^8.57.0",
-    "prettier": "^3.1.1"
+    "prettier": "^3.1.1",
+    "tailwindcss": "^3.4.19"
   },
   "files": [
     "speedtest.js",

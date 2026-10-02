@@ -1,0 +1,7 @@
+/**
+ * Tailwind entry point. Compiles to frontend/styling/tailwind.css, which the
+ * page loads through index.css. Run `npm run css` after changing the markup.
+ */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

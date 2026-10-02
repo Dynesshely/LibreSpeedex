@@ -1,36 +1,76 @@
+/**
+ * The single source of truth for the CRT palette.
+ *
+ * Phosphor colours are stored as bare RGB triplets so they can be reused with
+ * any alpha: `rgb(var(--crt-phosphor) / 12%)`. Tailwind mirrors these in
+ * `tailwind.config.js` (`theme.extend.colors`), so utilities like
+ * `text-phosphor/60` and hand written CSS always agree.
+ *
+ * To reskin the whole screen, change the four phosphor values below.
+ */
+
 :root {
-  --theme-green: #5cf9fd;
-  --theme-pink: #d63bc6;
+  /* The tube itself */
+  --crt-screen: 2 7 10; /* screen dark, behind the glow */
+  --crt-screen-deep: 0 3 5; /* bezel / edges */
 
-  --background-backup-color: #0e0720;
-  --background-overlay-color: rgb(41 26 70 / 71%);
+  /* Phosphors */
+  --crt-phosphor: 99 255 224; /* main cyan-green phosphor */
+  --crt-magenta: 190 60 255; /* second gun: download trace */
+  --crt-amber: 255 176 0; /* cursor, warnings */
 
-  --primary-text-color: #ffffff;
-  --tagline-text-color: var(--theme-green);
-  --secondary-text-color: #898591;
-  --primary-text-disabled-color: #888888;
-  --secondary-text-disabled-color: #2e7d7f;
+  /* Text */
+  --crt-ink: 214 255 247; /* primary text, white with a cyan cast */
+  --crt-muted: 94 150 145; /* labels, secondary text */
 
-  --button-text-color: #3e2f50;
-  --button-gradient-1-color-1: #f5f5f5;
-  --button-gradient-1-color-2: var(--theme-green);
-  --button-gradient-1-color-3: var(--theme-pink);
-  --button-shadow-color: #5cf9fd47;
-  --button-disabled-background-color: #a2a2a2;
+  /* Screen wash. Kept in sync with tailwind.config.js */
+  --background-backup-color: rgb(var(--crt-screen));
+  --background-overlay-color: rgb(var(--crt-screen) / 42%);
 
-  --server-selector-border-color: #625b6b;
-  --server-selector-hover-border-color: var(--theme-green);
-  --server-selector-background-color: #251b32;
-  --server-selector-hover-background-color: var(--server-selector-border-color);
+  /* ---- semantic aliases used by the component stylesheets ---- */
 
-  --gauge-background-color: #3e2f50;
-  --gauge-progress-color: #726c7a;
-  --gauge-pointer-green: #e2fbfc;
-  --gauge-pointer-pink: #d091ca;
+  --theme-green: rgb(var(--crt-phosphor));
+  --theme-pink: rgb(var(--crt-magenta));
+  --theme-amber: rgb(var(--crt-amber));
 
-  --ping-and-jitter-primary-text-color: #f5f5f5;
-  --ping-and-jitter-secondary-text-color: #7b7b7b;
+  --primary-text-color: rgb(var(--crt-ink));
+  --tagline-text-color: rgb(var(--crt-phosphor));
+  --secondary-text-color: rgb(var(--crt-muted));
+  --primary-text-disabled-color: rgb(var(--crt-muted) / 60%);
+  --secondary-text-disabled-color: rgb(var(--crt-phosphor) / 35%);
 
-  --popup-background-color: #251b32;
-  --popup-shadow-color: #000000;
+  /* Buttons */
+  --button-text-color: rgb(var(--crt-screen-deep));
+  --button-face-color-1: rgb(var(--crt-ink));
+  --button-face-color-2: rgb(var(--crt-phosphor));
+  --button-ghost-color: rgb(var(--crt-phosphor) / 10%);
+  --button-border-color: rgb(var(--crt-phosphor) / 45%);
+  --button-shadow-color: rgb(var(--crt-phosphor) / 25%);
+  --button-disabled-background-color: rgb(var(--crt-muted) / 25%);
+
+  /* Panels (server selector, chart frame) */
+  --panel-background-color: rgb(var(--crt-screen) / 80%);
+  --panel-border-color: rgb(var(--crt-phosphor) / 25%);
+  --panel-hover-border-color: rgb(var(--crt-phosphor));
+  --panel-hover-background-color: rgb(var(--crt-phosphor) / 8%);
+
+  --server-selector-border-color: var(--panel-border-color);
+  --server-selector-hover-border-color: var(--panel-hover-border-color);
+  --server-selector-background-color: var(--panel-background-color);
+  --server-selector-hover-background-color: var(--panel-hover-background-color);
+
+  /* Gauges */
+  --gauge-background-color: rgb(var(--crt-phosphor) / 18%);
+  --gauge-progress-color: rgb(var(--crt-phosphor) / 30%);
+  --gauge-pointer-green: rgb(var(--crt-phosphor));
+  --gauge-pointer-pink: rgb(var(--crt-magenta));
+  --gauge-download-color: rgb(var(--crt-magenta));
+  --gauge-upload-color: rgb(var(--crt-phosphor));
+
+  --ping-and-jitter-primary-text-color: rgb(var(--crt-ink));
+  --ping-and-jitter-secondary-text-color: rgb(var(--crt-muted));
+
+  /* Dialogs */
+  --popup-background-color: rgb(var(--crt-screen));
+  --popup-shadow-color: rgb(0 0 0);
 }

@@ -3,11 +3,17 @@ const { test, expect } = require("@playwright/test");
 const staticRepositoryUrl = "http://127.0.0.1:18184";
 
 const expectedAssets = [
-  "/index-modern.html",
+  "/index.html",
   "/settings.json",
   "/server-list.json",
   "/frontend/styling/index.css",
+  "/frontend/styling/colors.css",
+  "/frontend/styling/crt.css",
+  "/frontend/styling/terminal.css",
+  "/frontend/styling/tailwind.css",
   "/frontend/javascript/index.js",
+  "/frontend/javascript/crt-background.js",
+  "/frontend/javascript/realtime-chart.js",
   "/frontend/images/logo.svg",
   "/frontend/images/favicon.svg",
   "/frontend/images/close-button.svg",
@@ -17,8 +23,7 @@ const expectedAssets = [
   "/frontend/images/background.jpeg",
   "/speedtest.js",
   "/speedtest_worker.js",
-  "/design-switch.js",
-  "/config.json",
+  "/tailwind.config.js",
   "/images/icon-192.png"
 ];
 

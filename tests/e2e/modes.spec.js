@@ -1,6 +1,6 @@
 const { test, expect } = require('@playwright/test');
 const { baseUrls } = require('./helpers/env');
-const { modernStartButton, classicStartButton } = require('./helpers/ui');
+const { modernStartButton } = require('./helpers/ui');
 
 const defaultTagline = 'No Flash, No Java, No Websockets, No Bullsh*t';
 const frontendRemoteServerListUrl = 'http://127.0.0.1:18184/tests/e2e/fixtures/servers-frontend-remote.json';
@@ -12,14 +12,14 @@ test.describe('Runtime mode smoke coverage', () => {
 
     const index = await request.get(`${baseUrls.standalone}/index.html`);
     expect(index.ok()).toBeTruthy();
-    await expect(await index.text()).toContain('design-switch.js');
+    await expect(await index.text()).toContain('frontend/styling/index.css');
 
     for (const endpoint of ['/backend/empty.php', '/backend/garbage.php', '/backend/getIP.php']) {
       const response = await request.get(`${baseUrls.standalone}${endpoint}`);
       expect(response.ok()).toBeTruthy();
     }
 
-    await page.goto(`${baseUrls.standalone}/index-modern.html`);
+    await page.goto(`${baseUrls.standalone}/index.html`);
     await expect(modernStartButton(page)).toBeVisible();
     await expect(page.locator('main > p.tagline')).toHaveText(defaultTagline);
   });
@@ -29,7 +29,7 @@ test.describe('Runtime mode smoke coverage', () => {
     expect(settings.ok()).toBeTruthy();
     await expect(settings.json()).resolves.toMatchObject({ telemetry_level: 'off', time_dl_max: 12 });
 
-    await page.goto(`${baseUrls.standaloneAlpine}/index-modern.html`);
+    await page.goto(`${baseUrls.standaloneAlpine}/index.html`);
     await expect(modernStartButton(page)).toBeVisible();
   });
 
@@ -48,13 +48,13 @@ test.describe('Runtime mode smoke coverage', () => {
     const localBackendEndpoint = await request.get(`${baseUrls.frontend}/backend/empty.php`);
     expect(localBackendEndpoint.status()).toBe(404);
 
-    await page.goto(`${baseUrls.frontend}/index-modern.html`);
+    await page.goto(`${baseUrls.frontend}/index.html`);
     await expect(modernStartButton(page)).toBeVisible();
     await expect(page.locator('#selected-server')).not.toHaveText(/searching nearest server/i);
   });
 
   test('frontend starts with SERVER_LIST_URL without requiring /servers.json', async ({ page, request }) => {
-    const index = await request.get(`${baseUrls.frontendRemote}/index-modern.html`);
+    const index = await request.get(`${baseUrls.frontendRemote}/index.html`);
     expect(index.ok()).toBeTruthy();
     await expect(await index.text()).toContain(frontendRemoteServerListUrl);
 
@@ -65,19 +65,18 @@ test.describe('Runtime mode smoke coverage', () => {
     const localBackendEndpoint = await request.get(`${baseUrls.frontendRemote}/backend/empty.php`);
     expect(localBackendEndpoint.status()).toBe(404);
 
-    await page.goto(`${baseUrls.frontendRemote}/index-modern.html`);
+    await page.goto(`${baseUrls.frontendRemote}/index.html`);
     await expect(modernStartButton(page)).toBeVisible();
     await expect(page.locator('#selected-server')).toContainText('Remote frontend backend', { timeout: 10_000 });
   });
 
-  test('default entrypoint loads the classic frontend with SERVER_LIST_URL', async ({ page }) => {
+  test('root entry point serves the terminal frontend with SERVER_LIST_URL', async ({ page }) => {
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
 
     await page.goto(`${baseUrls.frontendRemote}/index.html`);
-    await page.waitForURL(/index-classic\.html/);
-    await expect(classicStartButton(page)).toBeVisible();
-    await expect(page.locator('#server')).toContainText('Remote frontend backend', { timeout: 10_000 });
+    await expect(modernStartButton(page)).toBeVisible();
+    await expect(page.locator('#selected-server')).toContainText('Remote frontend backend', { timeout: 10_000 });
     expect(pageErrors).toEqual([]);
   });
 
@@ -91,7 +90,7 @@ test.describe('Runtime mode smoke coverage', () => {
       expect(response.ok()).toBeTruthy();
     }
 
-    await page.goto(`${baseUrls.dual}/index-modern.html`);
+    await page.goto(`${baseUrls.dual}/index.html`);
     await expect(modernStartButton(page)).toBeVisible();
   });
 });

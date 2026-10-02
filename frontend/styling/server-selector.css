@@ -1,83 +1,103 @@
-/* The server selector fake dropdown */
+/**
+ * The server selector.
+ *
+ * Modelled as a terminal readout: a dim label line ("current server") over the
+ * host name, with the list dropping out of it like a console menu.
+ */
 
 .server-selector {
   position: relative;
-  width: 50rem;
-  margin: 0rem auto;
+  width: 52rem;
+  margin: 0 auto;
   display: none;
 
-  &.active {
+  /* `.active` is what the script toggles for a multi server list. A single
+     server gets `.single-server` instead; showing it too means the page always
+     states which host it is about to test against. */
+  &.active,
+  &.single-server {
     display: block;
   }
 
-  @media screen and (max-width: 500px) {
+  @media screen and (max-width: 560px) {
     width: 100%;
   }
 
   & > .chosen {
     position: relative;
-    height: 8.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 1.5rem 5rem 1.5rem 2rem;
 
     border: 1px solid var(--server-selector-border-color);
-    border-radius: 0.8rem;
     background-color: var(--server-selector-background-color);
+    text-align: left;
     cursor: pointer;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, background-color 0.2s;
 
     &:hover {
       border-color: var(--server-selector-hover-border-color);
-    }
-
-    & > div.chevron {
-      content: "";
-      position: absolute;
-      display: block;
-      width: 32px;
-      height: 32px;
-      right: 1.8rem;
-      top: 1rem;
+      background-color: var(--server-selector-hover-background-color);
     }
 
     & > p {
-      margin: 0;
-      position: absolute;
-      left: 2.4rem;
-      top: 1.5rem;
-      font-size: 1.6rem;
-      font-weight: 400;
-      letter-spacing: -0.1rem;
+      font-size: 1.1rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
       color: var(--theme-green);
     }
 
     & > h2 {
-      position: absolute;
-      left: 2.4rem;
-      right: 2.4rem;
-      bottom: 1rem;
-
-      font-size: 2.4rem;
-      font-weight: 700;
-      letter-spacing: -0.2rem;
+      font-size: 2rem;
+      font-weight: 400;
       color: var(--primary-text-color);
-      text-align: left;
-      text-transform: uppercase;
       text-overflow: ellipsis;
       white-space: nowrap;
       overflow: hidden;
 
       & span {
-        font-weight: 400;
+        color: var(--secondary-text-color);
+      }
+    }
+
+    /* The chevron is drawn in CSS: the shipped svg is hard coded to the old
+       purple grey and would clash with the phosphor palette. */
+    & > div.chevron {
+      position: absolute;
+      right: 1.8rem;
+      top: 50%;
+      display: block;
+      width: 1.6rem;
+      height: 1.6rem;
+      transform: translateY(-60%);
+
+      & > img {
+        display: none;
+      }
+
+      &::before {
+        content: "";
+        display: block;
+        width: 1.1rem;
+        height: 1.1rem;
+        border-right: 2px solid rgb(var(--crt-phosphor) / 75%);
+        border-bottom: 2px solid rgb(var(--crt-phosphor) / 75%);
+        transform: rotate(45deg) translate(-0.2rem, -0.2rem);
       }
     }
   }
 
-  /* Special case for when we have only one server */
+  /* Only one server: nothing to open, so it reads as a plain status panel */
   &.single-server {
     & > .chosen {
       cursor: default;
+
       &:hover {
         border-color: var(--server-selector-border-color);
+        background-color: var(--server-selector-background-color);
       }
+
       & > div.chevron {
         display: none;
       }
@@ -90,71 +110,79 @@
 
     & > .chosen {
       cursor: default;
+
       &:hover {
         border-color: var(--server-selector-border-color);
+        background-color: var(--server-selector-background-color);
       }
+
       & > p {
         color: var(--secondary-text-disabled-color);
       }
       & > h2 {
         color: var(--primary-text-disabled-color);
       }
+      & > div.chevron::before {
+        border-color: rgb(var(--crt-muted) / 40%);
+      }
     }
   }
 
-  /* Styling for the list of servers that pops out */
+  /* Styling for the list of servers that drops out */
   & > ul.servers {
     position: absolute;
-    width: 50rem;
-    max-height: 70vh;
+    left: 0;
+    right: 0;
+    top: 100%;
+    max-height: 60vh;
     overflow-y: auto;
-    z-index: 1;
+    z-index: 20;
 
     border: 1px solid var(--server-selector-border-color);
-    border-radius: 0.8rem;
-    background-color: var(--server-selector-background-color);
+    border-top: 0;
+    background-color: rgb(var(--crt-screen-deep) / 97%);
     list-style: none;
 
     transform: scaleY(0);
     transform-origin: top;
-    transition: transform 0.1s;
+    transition: transform 0.12s;
 
     &.active {
       transform: scaleY(1);
     }
 
-    @media screen and (max-width: 800px) {
-      width: 100%;
-    }
-
     & > li {
       &:first-child a {
-        padding-top: 1.5rem;
+        padding-top: 1.2rem;
       }
       &:last-child a {
-        padding-bottom: 1.5rem;
+        padding-bottom: 1.2rem;
       }
 
       & a {
         display: block;
-        padding: 0.7rem 2.4rem;
+        padding: 0.8rem 2rem;
 
-        font-size: 2.4rem;
-        font-weight: 700;
-        letter-spacing: -0.2rem;
-        color: var(--sprint-text-color);
-        text-transform: uppercase;
+        font-size: 1.6rem;
+        color: var(--primary-text-color);
         text-decoration: none;
         text-align: left;
         cursor: pointer;
 
-        transition: background-color 0.2s;
+        transition: background-color 0.15s, color 0.15s;
+
+        &::before {
+          content: "> ";
+          color: rgb(var(--crt-phosphor) / 50%);
+        }
 
         & span {
-          font-weight: 400;
+          color: var(--secondary-text-color);
         }
+
         &:hover {
           background-color: var(--server-selector-hover-background-color);
+          color: var(--theme-green);
         }
       }
     }
@@ -162,10 +190,14 @@
 
   /* Styling for the sponsor text under the dropdown */
   & > p.sponsor {
-    margin: 1rem 0 5rem 0;
+    margin: 1rem 0 1rem 0;
+    font-size: 1.2rem;
+    letter-spacing: 0.06em;
+    color: var(--secondary-text-color);
+    text-align: left;
 
     & a {
-      font-weight: 400;
+      color: var(--theme-green);
     }
   }
 }

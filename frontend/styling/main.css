@@ -1,58 +1,74 @@
-/* Texts on the front page */
+/**
+ * Text defaults for the main column.
+ *
+ * The page title and the tagline are the only two nodes in the markup without
+ * utility classes: docker/entrypoint.sh rewrites them from $TITLE and $TAGLINE,
+ * so their HTML has to stay predictable.
+ */
 
-main {
+main > h1 {
+  margin-top: 3.6rem;
+  font-family: "Inter", sans-serif;
+  font-size: 4rem;
+  font-weight: 400;
+  letter-spacing: -0.12rem;
+  color: var(--primary-text-color);
+  text-wrap: balance;
+
+  @media screen and (max-width: 800px) {
+    font-size: 3rem;
+  }
+}
+
+main > p.tagline {
+  margin-top: 1.4rem;
+  margin-bottom: 5.5rem;
+  font-size: 1.5rem;
+  line-height: 2.4rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--tagline-text-color);
+
+  /* a terminal prompt marker, so a short tagline still reads as a command */
+  &::before {
+    content: "> ";
+    color: rgb(var(--crt-phosphor) / 55%);
+  }
+}
+
+/* Privacy warning and the "you are connected through" readout */
+
+#privacy-warning {
+  /* The box keeps its space even while hidden, so revealing the client IP in
+     the middle of a test does not shove the gauges down the page. */
+  display: block;
+  min-height: 4.4rem;
+  margin-bottom: 2rem;
+  font-size: 1.3rem;
+  line-height: 2.2rem;
   text-align: center;
-  padding: 0 2rem;
-  flex: 1;
+  color: var(--secondary-text-color);
 
-  & > h1 {
-    margin: 0.2rem;
-    font-size: 3.6rem;
-    font-weight: 400;
-    letter-spacing: -0.2rem;
-    color: var(--primary-text-color);
+  /* The script toggles `.hidden`; Tailwind's version would drop the box out of
+     flow and take the reserved space with it. */
+  &.hidden {
+    opacity: 0;
+    pointer-events: none;
   }
 
-  & p {
-    margin-top: 8rem;
-    font-size: 1.6rem;
-    line-height: 2.5rem;
-    font-weight: 400;
-    letter-spacing: -0.1rem;
-    color: var(--secondary-text-color);
-
-    &#privacy-warning {
-      min-height: 5.3rem;
-
-      & > span {
-        font-weight: 700;
-        color: var(--theme-green);
-      }
-      &.hidden {
-        opacity: 0;
-        pointer-events: none;
-      }
-    }
+  & span {
+    color: var(--theme-green);
   }
+}
 
-  & > p.tagline {
-    margin-top: 0;
-    margin-bottom: 6rem;
-    font-size: 2rem;
-    color: var(--tagline-text-color);
-  }
+main a {
+  font-size: inherit;
+  color: var(--secondary-text-color);
+  text-underline-offset: 0.3rem;
+  transition: color 0.2s, text-underline-offset 0.2s;
 
-  & a {
-    font-size: 1.6rem;
-    font-weight: 700;
-    letter-spacing: -0.1rem;
-    color: var(--secondary-text-color);
-    text-underline-offset: 0.3rem;
-    transition: text-underline-offset 0.2s;
-
-    &:hover {
-      color: var(--theme-green);
-      text-underline-offset: 0.5rem;
-    }
+  &:hover {
+    color: var(--theme-green);
+    text-underline-offset: 0.5rem;
   }
 }

@@ -17,6 +17,8 @@ RUN mkdir -p /speedtest/
 
 # Copy sources
 COPY backend/ /speedtest/backend
+# frontend/styling/tailwind.css is generated: run `npm run css` after changing
+# the markup, before building this image.
 COPY frontend/ /speedtest/frontend
 
 COPY results/*.php /speedtest/results/
@@ -24,9 +26,6 @@ COPY results/*.ttf /speedtest/results/
 
 COPY *.js /speedtest/
 COPY index.html /speedtest/
-COPY index-classic.html /speedtest/
-COPY index-modern.html /speedtest/
-COPY config.json /speedtest/
 COPY settings.json /speedtest/
 COPY server-list.json /speedtest/
 COPY stability.html /speedtest/
@@ -45,7 +44,6 @@ ENV TELEMETRY=false
 ENV ENABLE_ID_OBFUSCATION=false
 ENV REDACT_IP_ADDRESSES=false
 ENV WEBPORT=8080
-ENV USE_NEW_DESIGN=false
 
 # https://httpd.apache.org/docs/2.4/stopping.html#gracefulstop
 STOPSIGNAL SIGWINCH

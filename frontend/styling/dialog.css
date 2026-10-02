@@ -10,8 +10,9 @@ dialog {
   margin-top: 23rem;
 
   background: var(--popup-background-color);
-  border: none;
-  border-radius: 0.8rem;
+  border: 1px solid rgb(var(--crt-phosphor) / 30%);
+  box-shadow: 0 0 0 1px rgb(var(--crt-screen-deep)), 0 1rem 4rem rgb(0 0 0 / 70%),
+    inset 0 0 6rem rgb(var(--crt-phosphor) / 5%);
 
   @media screen and (max-width: 800px) {
     position: fixed;
@@ -50,6 +51,11 @@ dialog {
     right: 3rem;
 
     cursor: pointer;
+    transition: transform 0.2s;
+
+    &:hover {
+      transform: scale(1.12);
+    }
   }
 
   & > section {
@@ -58,26 +64,33 @@ dialog {
     margin: 4rem 2rem 2rem 4rem;
     padding: 0 2rem 0 0;
 
+    text-align: left;
+
     & h1,
     & h2 {
       margin: 3rem 0 2rem 0;
-      font-size: 3.6rem;
+      font-size: 2.6rem;
       font-weight: 400;
-      letter-spacing: -0.2rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
       color: var(--primary-text-color);
     }
     & h2 {
       margin: 2rem 0 1rem 0;
-      font-size: 2.5rem;
+      font-size: 1.8rem;
+      color: var(--theme-green);
+    }
+
+    & h2::before {
+      content: "> ";
+      color: rgb(var(--crt-phosphor) / 50%);
     }
 
     & p,
     & li {
       margin: 1rem 0 1rem 0;
-      font-size: 1.6rem;
-      line-height: 2.5rem;
-      font-weight: 400;
-      letter-spacing: -0.1rem;
+      font-size: 1.4rem;
+      line-height: 2.3rem;
       color: var(--secondary-text-color);
     }
 
@@ -91,15 +104,11 @@ dialog {
     }
 
     & a {
-      font-size: 1.6rem;
-      font-weight: 700;
-      letter-spacing: -0.1rem;
-      color: var(--secondary-text-color);
+      color: var(--theme-green);
       text-underline-offset: 0.3rem;
       transition: text-underline-offset 0.2s;
 
       &:hover {
-        color: var(--theme-green);
         text-underline-offset: 0.5rem;
       }
     }
@@ -109,7 +118,7 @@ dialog {
 @keyframes fade-in {
   0% {
     opacity: 0;
-    transform: scale(0.6);
+    transform: scale(0.96);
     display: none;
   }
   0.1% {
@@ -133,7 +142,7 @@ dialog {
   }
   100% {
     opacity: 0;
-    transform: scale(0.6);
+    transform: scale(0.96);
     display: none;
   }
 }

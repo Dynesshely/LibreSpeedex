@@ -68,13 +68,21 @@ A .NET client library is available in the [`LibreSpeed.NET`](https://github.com/
 
 If you want to contribute or develop with LibreSpeed, see [DEVELOPMENT.md](DEVELOPMENT.md) for information about using npm for development tasks, linting, and formatting.
 
-## Design switch
+## User interface
 
-LibreSpeed supports both the classic and modern UI. The root `index.html` acts as a lightweight switcher and redirects to `index-classic.html` or `index-modern.html` based on `config.json` (`useNewDesign`) or URL overrides (`?design=new` / `?design=old`). For architecture and deployment details (including Docker behavior), see [DESIGN_SWITCH.md](DESIGN_SWITCH.md).
+LibreSpeed ships a single terminal / CRT styled interface at `index.html`: a
+phosphor screen with scanlines, a pixelated activity backdrop, twin speed gauges
+and a realtime throughput plot (x: elapsed time, y: Mbit/s) drawn while a test
+runs. It is built with Tailwind utilities compiled ahead of time into
+`frontend/styling/tailwind.css`; see [DEVELOPMENT.md](DEVELOPMENT.md) for the
+build step and how to reskin it.
+
+Docker deployments can customise the page with the `TITLE`, `TAGLINE` and
+`GDPR_EMAIL` environment variables, see [doc_docker.md](doc_docker.md).
 
 ## Stability test
 
-LibreSpeed includes a standalone connection stability test at `stability.html`, linked from both the classic and modern interfaces. It repeatedly measures ping over a selected duration and reports current, average, minimum, maximum, jitter, and failed request percentage values with a live chart.
+LibreSpeed includes a standalone connection stability test at `stability.html`, linked from the page footer. It repeatedly measures ping over a selected duration and reports current, average, minimum, maximum, jitter, and failed request percentage values with a live chart.
 
 The stability test can target the local LibreSpeed backend, one of the configured multiple points of test, or built-in external targets such as Google, Cloudflare, and Apple. It also supports optional latency threshold alerts and CSV export of the collected samples. Docker deployments copy `stability.html` and `stability_worker.js` into the web root and reuse the same server list configuration as the main UI.
 

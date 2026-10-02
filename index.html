@@ -1,19 +1,203 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <link rel="shortcut icon" href="favicon.ico">
-    <link rel="manifest" href="manifest.webmanifest">
-    <link rel="apple-touch-icon" href="images/icon-192.png">
-    <meta name="theme-color" content="#000000">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no" />
-    <meta charset="UTF-8" />
-    <script type="text/javascript" src="design-switch.js"></script>
-    <title>LibreSpeed</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <meta name="description"
+    content="Free and Open Source Speedtest. Run it right now in your browser, or self-host on a PHP, Golang, Rust or Node server. License: LGPL." />
+  <link rel="shortcut icon" href="frontend/images/favicon.svg" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="images/icon-192.png" />
+  <meta name="theme-color" content="#02070a" />
+  <!-- Stylesheet first: the scripts below read CSS custom properties when they
+       initialise, so the palette has to be live before they run. -->
+  <link rel="stylesheet" type="text/css" href="frontend/styling/index.css" />
+  <script type="text/javascript" src="speedtest.js"></script>
+  <script type="text/javascript">
+    // Set this to a different URL to load the server list from another location.
+    var SPEEDTEST_SERVERS = "server-list.json";
+  </script>
+  <script type="text/javascript" src="frontend/javascript/crt-background.js"></script>
+  <script type="text/javascript" src="frontend/javascript/realtime-chart.js"></script>
+  <script type="text/javascript" src="frontend/javascript/index.js"></script>
+  <title>LibreSpeed</title>
 </head>
 
-<body>
-    <p>Loading...</p>
+<body class="relative flex min-h-screen flex-col font-term text-ink antialiased">
+  <!-- CRT glass: scanlines, shadow mask, vignette, refresh sweep (crt.css) -->
+  <div class="crt-overlay" aria-hidden="true"></div>
+  <!-- Pixelated terminal backdrop: grid activity + data streams (crt-background.js) -->
+  <canvas id="crt-pixels" class="crt-pixels" aria-hidden="true"></canvas>
+
+  <header class="relative z-10 flex items-center justify-between gap-4 px-6 py-6 sm:px-12">
+    <img src="frontend/images/logo.svg" alt="LibreSpeed" class="h-8 w-auto" />
+    <p class="hidden items-center gap-3 text-[1.2rem] uppercase tracking-terminal text-muted sm:flex">
+      <span class="crt-led inline-block h-[0.9rem] w-[0.9rem] bg-phosphor"></span>
+      <span id="header-status">terminal ready</span>
+    </p>
+  </header>
+
+  <main class="relative z-10 mx-auto flex w-full max-w-[78rem] flex-1 flex-col items-center px-6 pb-16 text-center">
+    <!-- The two nodes below are deliberately free of utility classes:
+         docker/entrypoint.sh rewrites them from $TITLE / $TAGLINE. -->
+    <h1>Free and Open Source Speedtest.</h1>
+    <p class="tagline">No Flash, No Java, No Websockets, No Bullsh*t</p>
+
+    <div class="server-selector">
+      <div class="chosen">
+        <div class="chevron">
+          <img src="frontend/images/chevron.svg" alt="select..." />
+        </div>
+        <p>current server</p>
+        <h2 id="selected-server">searching nearest server...</h2>
+      </div>
+      <ul class="servers"></ul>
+      <p class="sponsor" id="sponsor">&nbsp;</p>
+    </div>
+
+    <p id="privacy-warning" class="hidden">
+      by clicking the start button you agree to our privacy policy<br />
+      <a href="#" id="choose-privacy">or choose your privacy options</a>
+    </p>
+
+    <button id="start-button" class="disabled mt-2 border border-phosphor/40 bg-phosphor/[0.07] px-12 py-4 text-[1.6rem]
+        uppercase tracking-terminal text-phosphor transition-all duration-200
+        hover:border-phosphor hover:bg-phosphor/[0.15] hover:shadow-phosphor-lg
+        focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-phosphor/70">
+    </button>
+
+    <div class="gauge-layout">
+      <div class="gauge download" id="download-gauge">
+        <div class="progress"></div>
+        <div class="speed"></div>
+        <h1><span id="download-speed">00</span> Mbps</h1>
+        <h2>Download</h2>
+      </div>
+
+      <div class="gauge upload" id="upload-gauge">
+        <div class="progress"></div>
+        <div class="speed"></div>
+        <h1><span id="upload-speed">00</span> Mbps</h1>
+        <h2>Upload</h2>
+      </div>
+
+      <!-- Ping sits under the download gauge, jitter under the upload gauge.
+           Both are filled in during the test and start out hidden. -->
+      <div class="ping hidden">
+        <span class="label">Ping</span>:&nbsp;
+        <span class="value" id="ping">00</span>ms
+      </div>
+
+      <div class="jitter hidden">
+        <span class="label">Jitter</span>:&nbsp;
+        <span class="value" id="jitter">00</span>ms
+      </div>
+    </div>
+
+    <section id="chart-panel" class="mt-14 w-full border border-phosphor/20 bg-screen/60 p-4 text-left sm:p-5">
+      <header
+        class="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-phosphor/15 pb-2 text-[1.15rem] uppercase tracking-terminal">
+        <span class="text-muted">realtime throughput</span>
+        <span id="chart-readout" class="text-phosphor/80">standby</span>
+      </header>
+
+      <div class="relative">
+        <canvas id="realtime-chart" class="block h-[16rem] w-full sm:h-[19rem]"></canvas>
+      </div>
+
+      <p class="mt-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-[1.1rem] uppercase tracking-terminal text-muted">
+        <span class="inline-flex items-center gap-2">
+          <i class="legend-swatch bg-magenta"></i> download
+        </span>
+        <span class="inline-flex items-center gap-2">
+          <i class="legend-swatch bg-phosphor"></i> upload
+        </span>
+        <span class="ml-auto normal-case tracking-normal">x: elapsed&nbsp;&nbsp;y: mbit/s</span>
+      </p>
+    </section>
+
+    <button id="share-results" class="hidden mt-8 border border-phosphor/40 bg-transparent px-8 py-2.5 text-[1.4rem]
+        uppercase tracking-terminal text-phosphor transition-colors hover:bg-phosphor/10">
+      Share results
+    </button>
+  </main>
+
+  <footer class="relative z-10 pb-10 pt-2 text-center">
+    <nav class="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-[1.25rem] uppercase tracking-terminal">
+      <a class="terminal-link" href="stability.html">stability test</a>
+      <a class="terminal-link" href="https://github.com/librespeed/speedtest">source code</a>
+    </nav>
+  </footer>
+
+  <dialog id="share">
+    <div class="close-dialog">
+      <img src="frontend/images/close-button.svg" alt="Close" />
+    </div>
+    <img id="results" src="" alt="Test results in graphical form" />
+    <button id="copy-link">Copy link</button>
+  </dialog>
+
+  <dialog id="privacy">
+    <div class="close-dialog">
+      <img src="frontend/images/close-button.svg" alt="Close" />
+    </div>
+    <section>
+      <h1>Privacy Policy</h1>
+      <p>
+        This HTML5 speed test server is configured with telemetry enabled.
+      </p>
+
+      <h2>What data we collect</h2>
+      <p>
+        At the end of the test, the following data is collected and stored:
+      </p>
+
+      <ul>
+        <li>Test ID</li>
+        <li>Time of testing</li>
+        <li>Test results (download and upload speed, ping and jitter)</li>
+        <li>IP address</li>
+        <li>ISP information</li>
+        <li>Approximate location (inferred from IP address, not GPS)</li>
+        <li>User agent and browser locale</li>
+        <li>Test log (contains no personal information)</li>
+      </ul>
+
+      <h2>How we use the data</h2>
+      <p>Data collected through this service is used to:</p>
+
+      <ul>
+        <li>
+          Allow sharing of test results (sharable image for forums, etc.)
+        </li>
+        <li>
+          To improve the service offered to you (for instance, to detect
+          problems on our side)
+        </li>
+      </ul>
+
+      <p>No personal information is disclosed to third parties.</p>
+
+      <h2>Your consent</h2>
+      <p>
+        By starting the test, you consent to the terms of this privacy policy.
+      </p>
+
+      <h2>Data removal</h2>
+      <p>
+        If you want to have your information deleted, you need to provide
+        either the ID of the test or your IP address. This is the only way to
+        identify your data, without this information we won't be able to
+        comply with your request.
+      </p>
+      <p>
+        Contact this email address for all deletion requests:
+        <a href="mailto:PUT@YOUR_EMAIL.HERE">TO BE FILLED BY DEVELOPER</a>.
+      </p>
+    </section>
+    <button id="close-privacy">Close</button>
+  </dialog>
 </body>
 
 </html>
