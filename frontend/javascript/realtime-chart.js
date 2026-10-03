@@ -29,17 +29,18 @@
      Keeping these valid matters: an invalid fillStyle is silently ignored and
      the canvas paints plain black. */
   const FALLBACK_COLORS = {
-    dl: "rgba(190,60,255,0.95)",
-    ul: "rgba(99,255,224,0.95)",
-    grid: "rgba(99,255,224,0.16)",
-    axis: "rgba(99,255,224,0.4)",
-    label: "rgba(94,150,145,0.95)",
-    standby: "rgba(94,150,145,0.8)",
+    dl: "rgba(107,161,245,0.95)",
+    ul: "rgba(93,211,196,0.95)",
+    grid: "rgba(93,211,196,0.14)",
+    axis: "rgba(93,211,196,0.35)",
+    label: "rgba(141,148,158,0.95)",
+    standby: "rgba(141,148,158,0.8)",
   };
 
   let canvas = null;
   let ctx = null;
   let readout = null;
+  let peakLabels = { dl: null, ul: null };
   let colors = FALLBACK_COLORS;
   let paletteReady = false;
 
@@ -62,16 +63,16 @@
       return /^\d+\s+\d+\s+\d+$/.test(value) ? value.replace(/\s+/g, ",") : null;
     };
 
-    const phosphor = triplet("--crt-phosphor");
-    const magenta = triplet("--crt-magenta");
+    const accent = triplet("--crt-accent");
+    const alt = triplet("--crt-alt");
     const muted = triplet("--crt-muted");
-    if (!phosphor || !magenta || !muted) return false;
+    if (!accent || !alt || !muted) return false;
 
     colors = {
-      dl: `rgba(${magenta},0.95)`,
-      ul: `rgba(${phosphor},0.95)`,
-      grid: `rgba(${phosphor},0.16)`,
-      axis: `rgba(${phosphor},0.4)`,
+      dl: `rgba(${accent},0.95)`,
+      ul: `rgba(${alt},0.95)`,
+      grid: `rgba(${alt},0.14)`,
+      axis: `rgba(${alt},0.35)`,
       label: `rgba(${muted},0.95)`,
       standby: `rgba(${muted},0.8)`,
     };
@@ -99,6 +100,19 @@
 
   function lastValue(list) {
     return list.length ? list[list.length - 1].v : 0;
+  }
+
+  function peakValue(list) {
+    return list.length ? Math.max(...list.map((sample) => sample.v)) : 0;
+  }
+
+  /* Peaks are reported in the legend row rather than on the canvas: two labels
+     near the same height used to collide, and the legend is where a reader
+     looks for the numbers anyway. */
+  function setPeakLabel(element, value) {
+    if (!element) return;
+    const text = value > 0 ? `max ${formatSpeed(value)}` : "";
+    if (element.textContent !== text) element.textContent = text;
   }
 
   /* ------------------------------------------------------------- rendering */
@@ -132,16 +146,16 @@
       ctx.fillStyle = stroke;
 
       if (previous === null) {
-        ctx.fillRect(x, y, QUANT, 2);
+        ctx.fillRect(x, y, QUANT, 3);
       } else {
         if (x > previous.x) {
           for (let px = previous.x; px < x; px += QUANT) {
-            ctx.fillRect(px, previous.y, QUANT, 2);
+            ctx.fillRect(px, previous.y, QUANT, 3);
           }
         }
         const top = Math.min(previous.y, y);
         const span = Math.abs(y - previous.y);
-        if (span > 0) ctx.fillRect(x, top, 2, span + 2);
+        if (span > 0) ctx.fillRect(x, top, 3, span + 3);
       }
 
       previous = { x: x, y: y };
@@ -153,7 +167,7 @@
     ctx.save();
     ctx.shadowColor = stroke;
     ctx.shadowBlur = 8;
-    ctx.fillRect(previous.x, previous.y, QUANT, 2);
+    ctx.fillRect(previous.x, previous.y, QUANT, 3);
     ctx.restore();
 
     ctx.fillStyle = colors.axis;
@@ -220,11 +234,32 @@
     for (let y = y0; y <= y1; y += QUANT) ctx.fillRect(x0, y, 1, 1);
     for (let x = x0; x <= x1; x += QUANT) ctx.fillRect(x, y1, 1, 1);
 
+    // Peak markers: a dotted line at each series' own maximum, so the plot
+    // reports the peak and not just the shape.
+    ctx.font = FONT;
+    ctx.textAlign = "right";
+    ctx.textBaseline = "bottom";
+    for (const series2 of [
+      { list: series.dl, stroke: colors.dl },
+      { list: series.ul, stroke: colors.ul },
+    ]) {
+      if (!series2.list.length) continue;
+      const peak = Math.max(...series2.list.map((sample) => sample.v));
+      if (peak <= 0) continue;
+
+      const y = Math.round(yOf(peak) / QUANT) * QUANT;
+      ctx.fillStyle = series2.stroke.replace(/[\d.]+\)$/, "0.35)");
+      for (let x = x0; x <= x1; x += QUANT * 2) ctx.fillRect(x, y, 1, 1);
+    }
+
     drawTrace(series.dl, colors.dl, xOf, yOf);
     drawTrace(series.ul, colors.ul, xOf, yOf);
   }
 
   function updateReadout() {
+    setPeakLabel(peakLabels.dl, peakValue(series.dl));
+    setPeakLabel(peakLabels.ul, peakValue(series.ul));
+
     if (!readout) return;
     if (!running && !series.dl.length && !series.ul.length) {
       readout.textContent = "standby";
@@ -330,6 +365,10 @@
 
     ctx = canvas.getContext("2d");
     readout = document.getElementById("chart-readout");
+    peakLabels = {
+      dl: document.getElementById("peak-download"),
+      ul: document.getElementById("peak-upload"),
+    };
     paletteReady = readPalette();
     resize();
 

@@ -160,7 +160,7 @@ async function applySettingsJSON() {
         settings[setting] != "false"
       ) {
         testState.telemetryEnabled = true;
-        document.querySelector("#privacy-warning").classList.remove("hidden");
+        document.querySelector("#privacy-notice").classList.remove("hidden");
       }
     }
   } catch (error) {
@@ -326,6 +326,9 @@ function startRenderingLoop() {
   const headerStatus = document.querySelector("#header-status");
 
   const gauges = document.querySelectorAll("#download-gauge, #upload-gauge");
+  const gaugeLayout = document.querySelector(".gauge-layout");
+  const downloadGaugeEl = document.querySelector("#download-gauge");
+  const uploadGaugeEl = document.querySelector("#upload-gauge");
   const downloadProgress = document.querySelector("#download-gauge .progress");
   const uploadProgress = document.querySelector("#upload-gauge .progress");
   const downloadGauge = document.querySelector("#download-gauge .speed");
@@ -354,6 +357,49 @@ function startRenderingLoop() {
     [RUNNING]: "test running",
     [FINISHED]: "test complete",
   };
+
+  /**
+   * Keep the instrument side of the UI in step with the live measurement: how
+   * bright each gauge burns, which direction is in focus, and how busy the
+   * pixel backdrop looks. Runs every frame, but only writes CSS variables and
+   * one data attribute, so the look itself stays in the stylesheets.
+   */
+  let activeDirection = "";
+
+  function updateInstrumentation() {
+    const data = testState.testData;
+    const measuring = testState.state === RUNNING;
+
+    const dlPower = measuring ? speedToPower(data && data.dlStatus) : 0;
+    const ulPower = measuring ? speedToPower(data && data.ulStatus) : 0;
+
+    if (downloadGaugeEl) {
+      downloadGaugeEl.style.setProperty("--gauge-glow", (dlPower * 0.9).toFixed(3));
+    }
+    if (uploadGaugeEl) {
+      uploadGaugeEl.style.setProperty("--gauge-glow", (ulPower * 0.9).toFixed(3));
+    }
+
+    // Focus follows activity - but only while a test is running: once it is
+    // finished, both gauges are the result and should read equally.
+    let direction = "";
+    if (measuring && data) {
+      const phase = Number(data.testState);
+      if (phase === 1) direction = "download";
+      else if (phase === 3) direction = "upload";
+    }
+
+    if (direction !== activeDirection) {
+      activeDirection = direction;
+      if (gaugeLayout) gaugeLayout.dataset.active = direction;
+    }
+
+    if (window.CrtBackground) {
+      const level =
+        direction === "download" ? dlPower : direction === "upload" ? ulPower : 0;
+      window.CrtBackground.setActivity(level, direction);
+    }
+  }
 
   // Show copy link button only if navigator.clipboard is available
   copyLink.classList.toggle("hidden", !navigator.clipboard);
@@ -395,6 +441,8 @@ function startRenderingLoop() {
         testState.state === RUNNING || testState.state === FINISHED
       )
     );
+
+    updateInstrumentation();
 
     if (
       testState.state === RUNNING &&
@@ -456,21 +504,10 @@ function startRenderingLoop() {
       ping.textContent = numberToText(testState.testData.pingStatus);
       jitter.textContent = numberToText(testState.testData.jitterStatus);
 
-      // Set user's IP and provider
+      // Set the client readout in the status bar. The "client" label and the
+      // placeholder live in the markup, so only the value is written here.
       if (testState.testData.clientIp) {
-        // Clear previous content
-        privacyWarning.innerHTML = '';
-
-        const connectedThrough = document.createElement('span');
-        connectedThrough.textContent = 'You are connected through:';
-  
-        const ipAddress = document.createTextNode(testState.testData.clientIp);
-
-        privacyWarning.appendChild(connectedThrough);
-        privacyWarning.appendChild(document.createElement('br'));
-        privacyWarning.appendChild(ipAddress);
-  
-        privacyWarning.classList.remove("hidden");
+        privacyWarning.textContent = testState.testData.clientIp;
       }
 
       // Set image for sharing results
@@ -494,6 +531,21 @@ function startRenderingLoop() {
   }
 
   renderUI();
+}
+
+/**
+ * Convert a speed in Mbits per second to a 0..1 "how hard is the link working"
+ * figure, on the same log scale the gauges use. Feeds the gauge bloom and the
+ * pixel backdrop, so the light on screen follows the measurement.
+ * @param {string} speed Speed in Mbits
+ * @returns {number} 0..1
+ */
+function speedToPower(speed) {
+  speed = Number(speed);
+  if (!(speed > 0)) return 0;
+
+  const logMax = Math.log10(10000 + 1); // 10 Gbps maxes out the gauge
+  return Math.max(0, Math.min(Math.log10(speed + 1) / logMax, 1));
 }
 
 /**
