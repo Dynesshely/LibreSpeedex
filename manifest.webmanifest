@@ -1,6 +1,6 @@
 {
-  "name": "LibreSpeed",
-  "short_name": "LibreSpeed",
+  "name": "LibreSpeedex",
+  "short_name": "LibreSpeedex",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#000000",

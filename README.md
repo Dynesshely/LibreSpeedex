@@ -1,14 +1,22 @@
-![LibreSpeed Logo](https://github.com/librespeed/speedtest/blob/master/.logo/logo3.png?raw=true)
-
-# LibreSpeed
+# LibreSpeedex
 
 No Flash, No Java, No Websocket, No Bullshit.
 
-This is a very lightweight speed test implemented in Javascript, using XMLHttpRequest and Web Workers.
+A very lightweight speed test implemented in Javascript, using XMLHttpRequest
+and Web Workers, wearing a terminal / CRT interface.
+
+> **LibreSpeedex is a fork of [LibreSpeed](https://github.com/librespeed/speedtest)**
+> by Federico Dossena. The test engine (`speedtest.js`, `speedtest_worker.js`,
+> the PHP backend, the stability worker and the results/telemetry UI) is
+> upstream code and keeps its attribution; this fork contributes the interface:
+> the palette, the terminal / CRT screen, the console layout and the realtime
+> plot. Licensed under LGPL-3.0-or-later, same as upstream.
 
 ## Try it
 
-[Take a speed test](https://librespeed.org)
+This fork is not published to any registry: run it yourself (see
+[Installation](#installation)), or try the upstream project's public instance at
+[librespeed.org](https://librespeed.org).
 
 ## Compatibility
 
@@ -66,11 +74,11 @@ A .NET client library is available in the [`LibreSpeed.NET`](https://github.com/
 
 ## Development
 
-If you want to contribute or develop with LibreSpeed, see [DEVELOPMENT.md](DEVELOPMENT.md) for information about using npm for development tasks, linting, and formatting.
+If you want to contribute or develop with LibreSpeedex, see [DEVELOPMENT.md](DEVELOPMENT.md) for information about using npm for development tasks, linting, and formatting.
 
 ## User interface
 
-LibreSpeed ships a single terminal / CRT styled interface at `index.html`: a
+LibreSpeedex ships two pages sharing one design language. `index.html` is the speed test: a
 phosphor screen with scanlines, a pixelated activity backdrop, twin speed gauges
 and a realtime throughput plot (x: elapsed time, y: Mbit/s) drawn while a test
 runs. It is built with Tailwind utilities compiled ahead of time into
@@ -82,9 +90,9 @@ Docker deployments can customise the page with the `TITLE`, `TAGLINE` and
 
 ## Stability test
 
-LibreSpeed includes a standalone connection stability test at `stability.html`, linked from the page footer. It repeatedly measures ping over a selected duration and reports current, average, minimum, maximum, jitter, and failed request percentage values with a live chart.
+`stability.html` is a connection stability test, linked from the page footer. It repeatedly measures ping over a selected duration and reports current, average, minimum, maximum, jitter, and failed request percentage values with a live chart.
 
-The stability test can target the local LibreSpeed backend, one of the configured multiple points of test, or built-in external targets such as Google, Cloudflare, and Apple. It also supports optional latency threshold alerts and CSV export of the collected samples. Docker deployments copy `stability.html` and `stability_worker.js` into the web root and reuse the same server list configuration as the main UI.
+The stability test can target the local backend, one of the configured multiple points of test, or built-in external targets such as Google, Cloudflare, and Apple. It also supports optional latency threshold alerts and CSV export of the collected samples. Docker deployments copy `stability.html` and `stability_worker.js` into the web root and reuse the same server list configuration as the main UI.
 
 ## Docker
 

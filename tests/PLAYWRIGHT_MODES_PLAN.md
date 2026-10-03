@@ -1,7 +1,7 @@
 # Playwright Plan: Test All Runtime and UI Modes
 
 ## Objective
-Build a deterministic Playwright test suite that validates LibreSpeed behavior across all supported deployment modes and UI design modes, without asserting real network throughput values.
+Build a deterministic Playwright test suite that validates LibreSpeedex behavior across all supported deployment modes and UI design modes, without asserting real network throughput values.
 
 ## Current Status
 - Phase 1 is implemented and passing in Chromium.

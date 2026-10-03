@@ -53,7 +53,7 @@ COPY images/ /speedtest/images/
 COPY docker/entrypoint.sh /
 
 # Prepare default environment variables
-ENV TITLE=LibreSpeed
+ENV TITLE=LibreSpeedex
 ENV TAGLINE="No Flash, No Java, No Websockets, No Bullsh*t"
 ENV MODE=standalone
 ENV PASSWORD=password
@@ -66,7 +66,7 @@ ENV WEBPORT=8080
 STOPSIGNAL SIGWINCH
 
 # Add labels for better metadata
-LABEL org.opencontainers.image.title="LibreSpeed"
+LABEL org.opencontainers.image.title="LibreSpeedex"
 LABEL org.opencontainers.image.description="A Free and Open Source speed test that you can host on your server(s)"
 LABEL org.opencontainers.image.vendor="LibreSpeed"
 LABEL org.opencontainers.image.url="https://github.com/librespeed/speedtest"

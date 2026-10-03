@@ -16,7 +16,6 @@ const expectedAssets = [
   "/frontend/javascript/index.js",
   "/frontend/javascript/crt-background.js",
   "/frontend/javascript/realtime-chart.js",
-  "/frontend/images/logo.svg",
   "/frontend/images/favicon.svg",
   "/frontend/images/close-button.svg",
   "/frontend/images/chevron.svg",

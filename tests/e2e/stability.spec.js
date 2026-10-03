@@ -67,7 +67,7 @@ test.describe("Stability test", () => {
   test("runs a short local measurement and exports CSV data", async ({ page }) => {
     await page.goto(`${baseUrls.standalone}/stability.html`);
 
-    await expect(page).toHaveTitle("LibreSpeed - Stability Test");
+    await expect(page).toHaveTitle("LibreSpeedex - Stability Test");
     await waitForLocalServer(page, "local");
 
     await setShortDuration(page);

@@ -1,7 +1,7 @@
-# LibreSpeed frontend
+# LibreSpeedex frontend
 
-This directory contains the LibreSpeed UI assets: a terminal / CRT styled
-single page frontend.
+This directory contains the LibreSpeedex UI assets: two pages sharing one design
+language - `index.html` (speed test) and `stability.html` (connection stability).
 
 ## Deployment
 

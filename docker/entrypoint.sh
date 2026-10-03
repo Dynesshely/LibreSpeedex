@@ -112,7 +112,7 @@ if [[ "$MODE" == "frontend" || "$MODE" == "dual" ||  "$MODE" == "standalone" ]];
     TITLE_ONE_LINE=${TITLE_ONE_LINE//$'\n'/ }
     TITLE_HTML_ESCAPED=$(html_escape "$TITLE_ONE_LINE")
     TITLE_ESCAPED=$(sed_escape "$TITLE_HTML_ESCAPED")
-    sed -i "s/<title>LibreSpeed<\\/title>/<title>$TITLE_ESCAPED<\\/title>/g; s/<h1>Free and Open Source Speedtest\\.<\\/h1>/<h1>$TITLE_ESCAPED<\\/h1>/g" /var/www/html/index.html
+    sed -i "s/<title>LibreSpeedex<\\/title>/<title>$TITLE_ESCAPED<\\/title>/g; s/<h1>Free and Open Source Speedtest\\.<\\/h1>/<h1>$TITLE_ESCAPED<\\/h1>/g" /var/www/html/index.html
   fi
 
   # Replace the tagline if TAGLINE is set
