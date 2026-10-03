@@ -7,8 +7,8 @@
 
 .server-selector {
   position: relative;
-  width: 52rem;
-  margin: 0 auto;
+  width: 100%;
+  margin: 0;
   display: none;
 
   /* `.active` is what the script toggles for a multi server list. A single
@@ -23,35 +23,23 @@
     width: 100%;
   }
 
+  /* The status bar draws the frame, so the chosen row is flat here and only
+     the dropdown keeps a border. */
   & > .chosen {
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 0.6rem;
-    padding: 1.5rem 5rem 1.5rem 2rem;
+    gap: 0.2rem;
+    padding: 0.3rem 4rem 0 0;
 
-    border: 1px solid var(--server-selector-border-color);
-    background-color: var(--server-selector-background-color);
     text-align: left;
     cursor: pointer;
-    transition: border-color 0.2s, background-color 0.2s;
-
-    &:hover {
-      border-color: var(--server-selector-hover-border-color);
-      background-color: var(--server-selector-hover-background-color);
-    }
-
-    & > p {
-      font-size: 1.1rem;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      color: var(--theme-green);
-    }
 
     & > h2 {
-      font-size: 2rem;
+      font-size: 1.8rem;
       font-weight: 400;
       color: var(--primary-text-color);
+      transition: color 0.2s;
       text-overflow: ellipsis;
       white-space: nowrap;
       overflow: hidden;
@@ -63,14 +51,18 @@
 
     /* The chevron is drawn in CSS: the shipped svg is hard coded to the old
        purple grey and would clash with the phosphor palette. */
+    &:hover > h2 {
+      color: var(--accent-color);
+    }
+
     & > div.chevron {
       position: absolute;
-      right: 1.8rem;
+      right: 1rem;
       top: 50%;
       display: block;
       width: 1.6rem;
       height: 1.6rem;
-      transform: translateY(-60%);
+      transform: translateY(-40%);
 
       & > img {
         display: none;
@@ -81,8 +73,8 @@
         display: block;
         width: 1.1rem;
         height: 1.1rem;
-        border-right: 2px solid rgb(var(--crt-phosphor) / 75%);
-        border-bottom: 2px solid rgb(var(--crt-phosphor) / 75%);
+        border-right: 2px solid rgb(var(--crt-accent) / 75%);
+        border-bottom: 2px solid rgb(var(--crt-accent) / 75%);
         transform: rotate(45deg) translate(-0.2rem, -0.2rem);
       }
     }
@@ -133,18 +125,21 @@
     position: absolute;
     left: 0;
     right: 0;
-    top: 100%;
-    max-height: 60vh;
+    /* The selector lives at the bottom of the console now, so the list has to
+       open upwards. */
+    bottom: 100%;
+    top: auto;
+    max-height: 40vh;
     overflow-y: auto;
     z-index: 20;
 
     border: 1px solid var(--server-selector-border-color);
-    border-top: 0;
+    border-bottom: 0;
     background-color: rgb(var(--crt-screen-deep) / 97%);
     list-style: none;
 
     transform: scaleY(0);
-    transform-origin: top;
+    transform-origin: bottom;
     transition: transform 0.12s;
 
     &.active {
@@ -173,7 +168,7 @@
 
         &::before {
           content: "> ";
-          color: rgb(var(--crt-phosphor) / 50%);
+          color: rgb(var(--crt-accent) / 50%);
         }
 
         & span {
@@ -182,7 +177,7 @@
 
         &:hover {
           background-color: var(--server-selector-hover-background-color);
-          color: var(--theme-green);
+          color: var(--accent-color);
         }
       }
     }
@@ -190,14 +185,14 @@
 
   /* Styling for the sponsor text under the dropdown */
   & > p.sponsor {
-    margin: 1rem 0 1rem 0;
+    margin: 0.4rem 0 0 0;
     font-size: 1.2rem;
     letter-spacing: 0.06em;
     color: var(--secondary-text-color);
     text-align: left;
 
     & a {
-      color: var(--theme-green);
+      color: var(--accent-color);
     }
   }
 }

@@ -32,7 +32,9 @@
   justify-content: center;
   gap: 1rem 5rem;
   width: 100%;
-  margin: 5rem auto 3rem auto;
+  /* The console frame supplies the edges, so the layout only pads itself. */
+  margin: 0;
+  padding: calc(var(--grid) * 9) 2rem calc(var(--grid) * 4);
 
   @media screen and (max-width: 1100px) {
     --gauge-width: min(40vw, 32rem);
@@ -43,6 +45,15 @@
   @media screen and (max-width: 500px) {
     gap: 1rem 2rem;
   }
+}
+
+/* Focus follows activity: while one direction is being measured, the other
+   gauge recedes instead of competing with it. Opacity only, so nothing reflows.
+   The attribute is set by frontend/javascript/index.js. */
+
+.gauge-layout[data-active="download"] div.gauge.upload,
+.gauge-layout[data-active="upload"] div.gauge.download {
+  opacity: 0.32;
 }
 
 /* The download/upload speed gauges */
@@ -65,12 +76,49 @@ div.gauge {
   transform: scale(1);
   width: var(--gauge-width);
   height: var(--gauge-height);
+  transition: opacity 0.4s ease;
 
   &.download {
     grid-area: download;
   }
   &.upload {
     grid-area: upload;
+  }
+
+  /* The bloom behind the arc. Its strength comes from the live speed
+     (--gauge-glow, 0..1, set by the page script), so the light on screen
+     follows the measurement instead of being a fixed decoration. `transform`
+     on the gauge already makes it a stacking context, which keeps z-index -1
+     behind the arcs but still inside this element. */
+  &::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: calc(var(--gauge-width) / 2);
+    width: calc(var(--gauge-width) * 1.7);
+    height: calc(var(--gauge-width) * 1.2);
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    opacity: var(--gauge-glow, 0);
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  &.download::before {
+    background: radial-gradient(
+      closest-side,
+      var(--gauge-bloom-download),
+      transparent
+    );
+  }
+
+  &.upload::before {
+    background: radial-gradient(
+      closest-side,
+      var(--gauge-bloom-upload),
+      transparent
+    );
   }
 
   & > .progress,
@@ -167,7 +215,7 @@ div.gauge {
       }
       & > .speed {
         &:before {
-          border-right-color: var(--gauge-pointer-pink);
+          border-right-color: var(--gauge-pointer-download);
         }
         &:after {
           border-color: var(--gauge-download-color);
@@ -180,7 +228,7 @@ div.gauge {
       }
       & > .speed {
         &:before {
-          border-right-color: var(--gauge-pointer-green);
+          border-right-color: var(--gauge-pointer-upload);
         }
         &:after {
           border-color: var(--gauge-upload-color);
@@ -189,7 +237,7 @@ div.gauge {
     }
     & > h1 > span {
       color: var(--primary-text-color);
-      text-shadow: 0 0 1.6rem rgb(var(--crt-phosphor) / 45%);
+      text-shadow: 0 0 1.2rem rgb(var(--crt-accent) / 30%);
     }
     & > h2 {
       color: var(--secondary-text-color);
@@ -226,7 +274,7 @@ div.gauge {
     bottom: 0;
     font-weight: 400;
     font-size: 1.5rem;
-    letter-spacing: 0.22em;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
   }
 
@@ -241,7 +289,7 @@ div.gauge {
 
     & > h2 {
       font-size: 2.4vw;
-      letter-spacing: 0.12em;
+      letter-spacing: 0.1em;
     }
   }
 }
@@ -255,14 +303,14 @@ div.gauge {
 
   font-size: 1.7rem;
   line-height: 2.6rem;
-  color: var(--ping-and-jitter-secondary-text-color);
+  color: var(--readout-secondary-text-color);
 
   & > .label {
     letter-spacing: 0.12em;
     text-transform: uppercase;
   }
   & > .value {
-    color: var(--ping-and-jitter-primary-text-color);
+    color: var(--readout-primary-text-color);
     font-variant-numeric: tabular-nums;
   }
 

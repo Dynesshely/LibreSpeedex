@@ -6,6 +6,82 @@
  * glow, canvas rendering mode).
  */
 
+/* Slashed zeros read as "engineered" and keep 0 distinguishable from O in a
+   monospace readout. Fonts without the feature simply ignore it. */
+
+body {
+  font-feature-settings: "zero" 1;
+}
+
+/* The status strip: one framed row with two readout cells, instead of two
+   stacked blocks that each took a full line of the composition. */
+
+.status-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  width: 100%;
+  /* The console provides the frame, so the strip only draws its own divider. */
+  border-top: 1px solid var(--panel-border-color);
+  background-color: rgb(255 255 255 / 2%);
+  text-align: left;
+
+  @media screen and (max-width: 640px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.status-cell {
+  position: relative;
+  min-width: 0;
+  padding: 1rem 1.6rem 1.2rem;
+
+  & + .status-cell {
+    border-left: 1px solid var(--panel-border-color);
+  }
+
+  @media screen and (max-width: 640px) {
+    & + .status-cell {
+      border-left: 0;
+      border-top: 1px solid var(--panel-border-color);
+    }
+  }
+}
+
+.status-label {
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--secondary-text-color);
+}
+
+/* The console: the gauges and the plot live in one frame, so the instrument
+   reads as a single object and owns the slack on tall viewports. */
+
+.console {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 68rem;
+  border: 1px solid var(--panel-border-color);
+  background-color: rgb(var(--crt-screen) / 45%);
+  box-shadow: inset 0 0 7rem rgb(var(--crt-accent) / 4%);
+}
+
+#chart-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  border-top: 1px solid var(--panel-border-color);
+}
+
+.legend-peak {
+  font-weight: 400;
+  color: var(--primary-text-color);
+}
+
 /* The pixelated terminal backdrop, drawn by crt-background.js */
 
 .crt-pixels {
@@ -18,12 +94,55 @@
   image-rendering: pixelated;
   /* Light added on top of the phosphor screen, rather than paint on top of it */
   mix-blend-mode: screen;
+
+  /* Fade the activity out over the reading column and let it live in the
+     periphery. The motion stays atmospheric instead of competing with text,
+     which matters most when a test saturates the link and the backdrop is at
+     its busiest. */
+  -webkit-mask-image: radial-gradient(
+    78% 62% at 50% 46%,
+    rgb(0 0 0 / 22%) 0%,
+    rgb(0 0 0 / 55%) 55%,
+    #000 82%
+  );
+  mask-image: radial-gradient(
+    78% 62% at 50% 46%,
+    rgb(0 0 0 / 22%) 0%,
+    rgb(0 0 0 / 55%) 55%,
+    #000 82%
+  );
+}
+
+/* The wordmark. The shipped logo.svg spelled the old name and carried the old
+   accent colour, so the header uses a text mark in the same mono stack as the
+   rest of the interface. */
+
+.wordmark {
+  font-size: 2.1rem;
+  letter-spacing: 0.14em;
+  color: var(--primary-text-color);
+  text-decoration: none;
+  white-space: nowrap;
+
+  & span {
+    color: var(--accent-color);
+    transition: color 0.2s;
+  }
+
+  /* Swap the two halves on hover: no glow, just colour. */
+  &:hover {
+    color: var(--accent-color);
+
+    & span {
+      color: var(--primary-text-color);
+    }
+  }
 }
 
 /* The status LED in the header */
 
 .crt-led {
-  box-shadow: 0 0 1rem rgb(var(--crt-phosphor) / 70%);
+  box-shadow: 0 0 0.8rem rgb(var(--crt-accent) / 55%);
   animation: led-pulse 2.6s ease-in-out infinite;
 }
 
@@ -31,11 +150,11 @@
   0%,
   100% {
     opacity: 1;
-    box-shadow: 0 0 1rem rgb(var(--crt-phosphor) / 70%);
+    box-shadow: 0 0 0.8rem rgb(var(--crt-accent) / 55%);
   }
   50% {
     opacity: 0.45;
-    box-shadow: 0 0 0.3rem rgb(var(--crt-phosphor) / 35%);
+    box-shadow: 0 0 0.3rem rgb(var(--crt-accent) / 35%);
   }
 }
 
@@ -49,11 +168,11 @@
   padding: 0.4rem 0;
   color: var(--secondary-text-color);
   text-decoration: none;
-  transition: color 0.2s, text-shadow 0.2s;
+  transition: color 0.2s, letter-spacing 0.2s;
 
   &::before,
   &::after {
-    color: rgb(var(--crt-phosphor) / 45%);
+    color: rgb(var(--crt-accent) / 40%);
     transition: color 0.2s;
   }
   &::before {
@@ -63,18 +182,21 @@
     content: "]";
   }
 
+  /* Colour and the brackets light up; no text-shadow. Glow is reserved for the
+     elements that are actually emitting something (the gauge arcs, the chart,
+     the status LED), which is what keeps it meaningful. */
   &:hover {
-    color: var(--theme-green);
-    text-shadow: 0 0 1.2rem rgb(var(--crt-phosphor) / 45%);
+    color: var(--accent-color);
+    letter-spacing: 0.02em;
 
     &::before,
     &::after {
-      color: var(--theme-green);
+      color: var(--accent-color);
     }
   }
 
   &:focus-visible {
-    outline: 2px solid rgb(var(--crt-phosphor) / 70%);
+    outline: 2px solid rgb(var(--crt-accent) / 70%);
     outline-offset: 4px;
   }
 }
@@ -86,7 +208,7 @@ footer nav::after {
   display: inline-block;
   width: 0.9rem;
   height: 1.6rem;
-  background-color: rgb(var(--crt-phosphor) / 80%);
+  background-color: rgb(var(--crt-accent) / 80%);
   animation: term-blink 1.1s steps(2, jump-none) infinite;
 }
 
@@ -103,7 +225,7 @@ footer nav::after {
 /* The realtime throughput screen */
 
 #chart-panel {
-  box-shadow: inset 0 0 5rem rgb(var(--crt-phosphor) / 5%);
+  box-shadow: inset 0 0 5rem rgb(var(--crt-accent) / 5%);
 }
 
 #realtime-chart {

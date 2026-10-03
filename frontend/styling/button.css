@@ -29,22 +29,26 @@ button {
   box-shadow: none;
 }
 
-/* Test running: the button aborts, so it goes amber and pulses */
+/* Test running: the button aborts. It stays the same outlined ghost button as
+   every other state - only the hue changes - and the "something is live" cue is
+   a blinking block borrowed from the terminal cursor. The pulsing halo it used
+   to have was the loudest thing on the page and read as a different, older
+   design language. */
 #start-button.active {
-  border-color: rgb(var(--crt-amber) / 70%);
-  background-color: rgb(var(--crt-amber) / 10%);
-  color: var(--theme-amber);
-  animation: term-pulse 1.4s ease-in-out infinite;
+  border-color: rgb(var(--crt-warn) / 65%);
+  background-color: rgb(var(--crt-warn) / 7%);
+  color: var(--warn-color);
 }
 
-@keyframes term-pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 1.5rem rgb(var(--crt-amber) / 20%);
-  }
-  50% {
-    box-shadow: 0 0 2.6rem rgb(var(--crt-amber) / 45%);
-  }
+#start-button.active::after {
+  content: "";
+  display: inline-block;
+  width: 0.8rem;
+  height: 0.8rem;
+  margin-left: 1rem;
+  vertical-align: baseline;
+  background-color: currentColor;
+  animation: term-blink 1.1s steps(2, jump-none) infinite;
 }
 
 /* Buttons that live inside the dialogs */
@@ -55,7 +59,7 @@ dialog button {
 
   border: 1px solid var(--button-border-color);
   background-color: var(--button-ghost-color);
-  color: var(--theme-green);
+  color: var(--accent-color);
 
   font-size: 1.5rem;
   letter-spacing: 0.12em;
@@ -64,27 +68,26 @@ dialog button {
   transition: background-color 0.2s, border-color 0.2s, color 0.2s;
 
   &:hover {
-    border-color: var(--theme-green);
-    background-color: rgb(var(--crt-phosphor) / 18%);
+    border-color: var(--accent-color);
+    background-color: rgb(var(--crt-accent) / 18%);
   }
 
   &:focus-visible {
-    outline: 2px solid rgb(var(--crt-phosphor) / 70%);
+    outline: 2px solid rgb(var(--crt-accent) / 70%);
     outline-offset: 3px;
   }
 
   /* "Copied!" feedback in the share dialog */
   &.active {
-    border-color: rgb(var(--crt-amber) / 70%);
-    color: var(--theme-amber);
+    border-color: rgb(var(--crt-warn) / 70%);
+    color: var(--warn-color);
   }
 }
 
 /* Respect users who asked for less motion */
 
 @media (prefers-reduced-motion: reduce) {
-  #start-button.active {
+  #start-button.active::after {
     animation: none;
-    box-shadow: 0 0 1.5rem rgb(var(--crt-amber) / 30%);
   }
 }
