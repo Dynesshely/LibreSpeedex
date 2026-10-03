@@ -1,16 +1,17 @@
 /**
  * Design by fromScratch Studio - 2022, 2023 (fromscratch.io)
  * Implementation in HTML/CSS/JS by Timendus - 2024 (https://github.com/Timendus)
- * Terminal / CRT reskin by Dynesshely - 2026
+ * LibreSpeedex: terminal / CRT reskin by Dynesshely - 2026
  *
- * Layout is utility first: Tailwind classes live in the markup and
- * `tailwind.css` is imported last so a class in the markup always beats a
- * component default here. This file keeps the screen itself, plus the two
- * nodes the Docker entrypoint rewrites and therefore cannot carry classes.
+ * The speed test page. Layout is utility first: Tailwind classes live in the
+ * markup and `tailwind.css` is imported last so a class in the markup always
+ * beats a component default here. `screen.css` holds what every page shares;
+ * this file only pulls in the components this page actually uses.
  *
  * See https://github.com/librespeed/speedtest/issues/585
  */
 
+@import url("screen.css");
 @import url("colors.css");
 @import url("fonts.css");
 @import url("main.css");
@@ -21,89 +22,3 @@
 @import url("crt.css");
 @import url("terminal.css");
 @import url("tailwind.css");
-
-/* Setting up the basic structure */
-
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
-}
-
-html,
-body {
-  min-height: 100vh;
-  width: 100%;
-}
-
-html {
-  background-color: var(--background-backup-color);
-
-  /* The phosphor screen. Layered instead of a bitmap, so it stays sharp at
-     any resolution: a cyan-green bloom at the top, a glowing horizon line at
-     the bottom, a magenta bleed in the lower left, a fine grid and a phosphor
-     dot matrix. Kept deliberately to a few well placed glows - stacking many
-     broad radials flattens the contrast and the screen turns to fog.
-     The scanlines, shadow mask and vignette live in crt.css, on top of the
-     page content, so the whole UI sits behind the same glass. */
-  background-image: radial-gradient(
-      125% 85% at 50% -4%,
-      rgb(var(--crt-phosphor) / 30%),
-      transparent 62%
-    ),
-    radial-gradient(
-      130% 50% at 50% 116%,
-      rgb(var(--crt-phosphor) / 30%),
-      transparent 70%
-    ),
-    radial-gradient(
-      85% 40% at 50% 70%,
-      rgb(var(--crt-phosphor) / 7%),
-      transparent 70%
-    ),
-    radial-gradient(
-      80% 70% at 3% 98%,
-      rgb(var(--crt-magenta) / 14%),
-      transparent 62%
-    ),
-    repeating-linear-gradient(
-      to right,
-      rgb(var(--crt-phosphor) / 6%) 0,
-      rgb(var(--crt-phosphor) / 6%) 1px,
-      transparent 1px,
-      transparent 60px
-    ),
-    repeating-linear-gradient(
-      to bottom,
-      rgb(var(--crt-phosphor) / 6%) 0,
-      rgb(var(--crt-phosphor) / 6%) 1px,
-      transparent 1px,
-      transparent 60px
-    ),
-    radial-gradient(rgb(var(--crt-phosphor) / 10%) 1px, transparent 1.4px);
-  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, repeat, repeat,
-    repeat;
-  background-position: center;
-  background-size:
-    auto,
-    auto,
-    auto,
-    auto,
-    60px 60px,
-    60px 60px,
-    3px 3px;
-  background-attachment: fixed;
-  font-size: 10px;
-
-  @media screen and (max-width: 800px) {
-    font-size: 8px;
-  }
-}
-
-body {
-  /* A translucent wash over the phosphor screen. Utilities are imported last,
-     so this must not be replaced by an opaque `bg-*` class on <body>. */
-  background-color: var(--background-overlay-color);
-  display: flex;
-  flex-direction: column;
-}

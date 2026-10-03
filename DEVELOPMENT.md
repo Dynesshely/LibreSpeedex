@@ -109,10 +109,12 @@ These tools are configured but non-intrusive to the existing codebase.
 .
 ├── speedtest.js                    # Main speedtest library
 ├── speedtest_worker.js             # Web Worker for speed testing
-├── index.html                      # The single UI (terminal / CRT design)
+├── index.html                      # Speed test UI (terminal / CRT design)
+├── stability.html                  # Connection stability UI, same design language
 ├── backend/                        # PHP backend files
 ├── frontend/
-│   ├── styling/                    # colors.css holds the palette; the rest is
+│   ├── styling/                    # colors.css holds the palette, screen.css the
+│   │                               # shared screen; the rest is per page
 │   │                               # component CSS + the generated tailwind.css
 │   ├── javascript/
 │   │   ├── index.js                # Drives the UI from the speedtest events

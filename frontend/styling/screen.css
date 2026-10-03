@@ -1,0 +1,89 @@
+/**
+ * The screen itself: reset, root scale and the emissive background layers.
+ *
+ * Shared by every page (index.html, stability.html) so the two cannot drift.
+ * Component stylesheets are page specific and are imported next to this one.
+ *
+ * The scanlines and vignette are NOT here: they sit on top of the content as a
+ * piece of glass, in crt.css, and the page has to add the `.crt-overlay`
+ * element for them to show up.
+ */
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  min-height: 100vh;
+  width: 100%;
+}
+
+html {
+  /* Native widgets (select popups, scrollbars, range tracks) follow this, so
+     they arrive dark instead of fighting the page. */
+  color-scheme: dark;
+  background-color: var(--background-backup-color);
+
+  /* Layered instead of a bitmap, so it stays sharp at any resolution: a soft
+     lift at the top edge, a glow along the bottom, a faint teal bleed in the
+     lower left, and the display's own grid + dot matrix. With a neutral palette
+     these have to stay *quiet* - a strong bloom turns back into a colour theme,
+     which is what the palette is avoiding. The grid is neutral (it is
+     structure); only the dot matrix carries the accent (it is lit phosphor). */
+  background-image: radial-gradient(
+      110% 70% at 50% -8%,
+      rgb(var(--crt-accent) / 13%),
+      transparent 62%
+    ),
+    radial-gradient(
+      110% 40% at 50% 118%,
+      rgb(var(--crt-accent) / 11%),
+      transparent 68%
+    ),
+    radial-gradient(
+      70% 60% at 2% 100%,
+      rgb(var(--crt-alt) / 6%),
+      transparent 64%
+    ),
+    repeating-linear-gradient(
+      to right,
+      rgb(255 255 255 / 4%) 0,
+      rgb(255 255 255 / 4%) 1px,
+      transparent 1px,
+      transparent 60px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      rgb(255 255 255 / 4%) 0,
+      rgb(255 255 255 / 4%) 1px,
+      transparent 1px,
+      transparent 60px
+    ),
+    radial-gradient(rgb(var(--crt-accent) / 6%) 1px, transparent 1.4px);
+  background-repeat: no-repeat, no-repeat, no-repeat, repeat, repeat, repeat;
+  background-position: center;
+  background-size:
+    auto,
+    auto,
+    auto,
+    60px 60px,
+    60px 60px,
+    3px 3px;
+  background-attachment: fixed;
+  font-size: 10px;
+
+  @media screen and (max-width: 800px) {
+    font-size: 8px;
+  }
+}
+
+body {
+  /* A translucent wash over the screen. Utilities are imported last, so this
+     must not be replaced by an opaque `bg-*` class on <body>. */
+  background-color: var(--background-overlay-color);
+  display: flex;
+  flex-direction: column;
+}

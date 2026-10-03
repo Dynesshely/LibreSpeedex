@@ -7,6 +7,8 @@ const expectedAssets = [
   "/settings.json",
   "/server-list.json",
   "/frontend/styling/index.css",
+  "/frontend/styling/screen.css",
+  "/frontend/styling/stability.css",
   "/frontend/styling/colors.css",
   "/frontend/styling/crt.css",
   "/frontend/styling/terminal.css",
