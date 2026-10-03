@@ -16,12 +16,13 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        phosphor: "rgb(var(--crt-phosphor) / <alpha-value>)",
-        magenta: "rgb(var(--crt-magenta) / <alpha-value>)",
+        accent: "rgb(var(--crt-accent) / <alpha-value>)",
+        alt: "rgb(var(--crt-alt) / <alpha-value>)",
         screen: "rgb(var(--crt-screen) / <alpha-value>)",
         ink: "rgb(var(--crt-ink) / <alpha-value>)",
         muted: "rgb(var(--crt-muted) / <alpha-value>)",
-        amber: "rgb(var(--crt-amber) / <alpha-value>)",
+        warn: "rgb(var(--crt-warn) / <alpha-value>)",
+        bad: "rgb(var(--crt-bad) / <alpha-value>)",
       },
       fontFamily: {
         term: [
@@ -36,11 +37,17 @@ module.exports = {
         sans: ["Inter", "sans-serif"],
       },
       letterSpacing: {
-        terminal: "0.12em",
+        /* Wide tracking is reserved for the small uppercase meta labels; body
+           text and commands run at nearly normal spacing. Over-tracking
+           everything is the quickest way to look like a sci-fi HUD. */
+        label: "0.1em",
+        terminal: "0.02em",
       },
       boxShadow: {
-        phosphor: "0 0 1.2rem rgb(var(--crt-phosphor) / 0.35)",
-        "phosphor-lg": "0 0 3rem rgb(var(--crt-phosphor) / 0.3)",
+        /* Kept low: a heavy bloom reads as decoration, which is exactly what
+           this palette is trying not to be. */
+        accent: "0 0 1.2rem rgb(var(--crt-accent) / 0.28)",
+        "accent-lg": "0 0 2rem rgb(var(--crt-accent) / 0.22)",
       },
     },
   },

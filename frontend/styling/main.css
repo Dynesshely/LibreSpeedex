@@ -4,60 +4,54 @@
  * The page title and the tagline are the only two nodes in the markup without
  * utility classes: docker/entrypoint.sh rewrites them from $TITLE and $TAGLINE,
  * so their HTML has to stay predictable.
+ *
+ * Vertical rhythm is expressed in multiples of the 4px grid (see --grid in
+ * colors.css), so spacing reads as one system instead of accumulated values.
  */
 
 main > h1 {
-  margin-top: 3.6rem;
+  margin-top: calc(var(--grid) * 6);
   font-family: "Inter", sans-serif;
-  font-size: 4rem;
+  font-size: 3.2rem;
   font-weight: 400;
-  letter-spacing: -0.12rem;
+  letter-spacing: -0.06rem;
   color: var(--primary-text-color);
   text-wrap: balance;
 
   @media screen and (max-width: 800px) {
-    font-size: 3rem;
+    font-size: 2.6rem;
   }
 }
 
 main > p.tagline {
-  margin-top: 1.4rem;
-  margin-bottom: 5.5rem;
-  font-size: 1.5rem;
+  margin-top: calc(var(--grid) * 3);
+  margin-bottom: calc(var(--grid) * 12);
+  font-size: 1.6rem;
   line-height: 2.4rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
   color: var(--tagline-text-color);
 
-  /* a terminal prompt marker, so a short tagline still reads as a command */
+  /* a terminal prompt marker, so a short tagline still reads as a command.
+     The line itself stays in sentence case: uppercase plus wide tracking on a
+     whole sentence is the single most "sci-fi HUD" cue there is, and it costs
+     legibility for nothing. */
   &::before {
     content: "> ";
-    color: rgb(var(--crt-phosphor) / 55%);
+    color: rgb(var(--crt-accent) / 55%);
   }
 }
 
-/* Privacy warning and the "you are connected through" readout */
+/* The client readout inside the status bar. The cell height is driven by the
+   taller server cell, so revealing the IP cannot reflow the page. */
 
 #privacy-warning {
-  /* The box keeps its space even while hidden, so revealing the client IP in
-     the middle of a test does not shove the gauges down the page. */
-  display: block;
-  min-height: 4.4rem;
-  margin-bottom: 2rem;
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   line-height: 2.2rem;
-  text-align: center;
-  color: var(--secondary-text-color);
+  color: var(--primary-text-color);
+  overflow-wrap: anywhere;
 
-  /* The script toggles `.hidden`; Tailwind's version would drop the box out of
-     flow and take the reserved space with it. */
-  &.hidden {
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  & span {
-    color: var(--theme-green);
+  & a {
+    color: var(--secondary-text-color);
   }
 }
 
@@ -68,7 +62,7 @@ main a {
   transition: color 0.2s, text-underline-offset 0.2s;
 
   &:hover {
-    color: var(--theme-green);
+    color: var(--accent-color);
     text-underline-offset: 0.5rem;
   }
 }

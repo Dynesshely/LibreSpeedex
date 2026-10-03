@@ -1,76 +1,97 @@
 /**
- * The single source of truth for the CRT palette.
+ * The single source of truth for the palette.
  *
- * Phosphor colours are stored as bare RGB triplets so they can be reused with
- * any alpha: `rgb(var(--crt-phosphor) / 12%)`. Tailwind mirrors these in
- * `tailwind.config.js` (`theme.extend.colors`), so utilities like
- * `text-phosphor/60` and hand written CSS always agree.
+ * Three rules, which is what keeps this from reading as a "theme":
  *
- * To reskin the whole screen, change the four phosphor values below.
+ *   1. Surfaces are neutral. The screen is near-black with no useful hue
+ *      (#0A0B0D), so colour only ever means "this is lit / this is measured".
+ *   2. Chrome is monochrome. Text, borders and panels use one grey ramp; the
+ *      accent appears on interaction (focus, hover, primary button) and on the
+ *      data itself - never as decoration spread over the page.
+ *   3. Exactly two data colours, both restrained: a blue for download and a
+ *      teal for upload. Amber is reserved for transient states (abort).
+ *
+ * Colours are stored as bare RGB triplets so they can be reused with any alpha:
+ * `rgb(var(--crt-accent) / 12%)`. Tailwind mirrors these in `tailwind.config.js`
+ * (`theme.extend.colors`), so utilities like `text-accent/60` and hand written
+ * CSS cannot drift apart.
+ *
+ * Contrast budget: the CRT glass in crt.css darkens every other scanline row,
+ * so text colours are chosen to clear WCAG AA on the *dark* rows, not on the
+ * average. muted is 6.4:1 raw / 5.3:1 on a dark row.
  */
 
 :root {
-  /* The tube itself */
-  --crt-screen: 2 7 10; /* screen dark, behind the glow */
-  --crt-screen-deep: 0 3 5; /* bezel / edges */
+  /* Everything is laid out on a 4px grid (root font-size is 10px). */
+  --grid: 0.4rem;
 
-  /* Phosphors */
-  --crt-phosphor: 99 255 224; /* main cyan-green phosphor */
-  --crt-magenta: 190 60 255; /* second gun: download trace */
-  --crt-amber: 255 176 0; /* cursor, warnings */
+  /* ---- surfaces: neutral, no tint worth naming ---- */
+  --crt-screen: 10 11 13;
+  --crt-screen-deep: 5 6 7;
 
-  /* Text */
-  --crt-ink: 214 255 247; /* primary text, white with a cyan cast */
-  --crt-muted: 94 150 145; /* labels, secondary text */
+  /* ---- one accent, used for interaction and for the download series ---- */
+  --crt-accent: 107 161 245; /* soft blue */
+
+  /* ---- the second data colour, for the upload series ---- */
+  --crt-alt: 93 211 196; /* soft teal */
+
+  /* ---- transient / interrupt states ---- */
+  --crt-warn: 229 181 103; /* soft amber */
+
+  /* ---- a negative outcome (verdict "bad", dropped packets) ---- */
+  --crt-bad: 226 122 122; /* soft red */
+
+  /* ---- the grey ramp ---- */
+  --crt-ink: 232 234 237; /* primary text */
+  --crt-muted: 141 148 158; /* labels, secondary text */
 
   /* Screen wash. Kept in sync with tailwind.config.js */
   --background-backup-color: rgb(var(--crt-screen));
   --background-overlay-color: rgb(var(--crt-screen) / 42%);
 
   /* ---- semantic aliases used by the component stylesheets ---- */
-
-  --theme-green: rgb(var(--crt-phosphor));
-  --theme-pink: rgb(var(--crt-magenta));
-  --theme-amber: rgb(var(--crt-amber));
+  --accent-color: rgb(var(--crt-accent));
+  --accent-alt-color: rgb(var(--crt-alt));
+  --warn-color: rgb(var(--crt-warn));
+  --bad-color: rgb(var(--crt-bad));
 
   --primary-text-color: rgb(var(--crt-ink));
-  --tagline-text-color: rgb(var(--crt-phosphor));
+  --tagline-text-color: rgb(var(--crt-muted));
   --secondary-text-color: rgb(var(--crt-muted));
-  --primary-text-disabled-color: rgb(var(--crt-muted) / 60%);
-  --secondary-text-disabled-color: rgb(var(--crt-phosphor) / 35%);
+  --primary-text-disabled-color: rgb(var(--crt-muted) / 55%);
+  --secondary-text-disabled-color: rgb(var(--crt-muted) / 45%);
 
-  /* Buttons */
-  --button-text-color: rgb(var(--crt-screen-deep));
-  --button-face-color-1: rgb(var(--crt-ink));
-  --button-face-color-2: rgb(var(--crt-phosphor));
-  --button-ghost-color: rgb(var(--crt-phosphor) / 10%);
-  --button-border-color: rgb(var(--crt-phosphor) / 45%);
-  --button-shadow-color: rgb(var(--crt-phosphor) / 25%);
-  --button-disabled-background-color: rgb(var(--crt-muted) / 25%);
+  /* Buttons: the resting look lives in Tailwind classes in the markup, so only
+     the values CSS still owns are kept here. */
+  --button-ghost-color: rgb(var(--crt-accent) / 8%);
+  --button-border-color: rgb(var(--crt-accent) / 35%);
 
-  /* Panels (server selector, chart frame) */
-  --panel-background-color: rgb(var(--crt-screen) / 80%);
-  --panel-border-color: rgb(var(--crt-phosphor) / 25%);
-  --panel-hover-border-color: rgb(var(--crt-phosphor));
-  --panel-hover-background-color: rgb(var(--crt-phosphor) / 8%);
+  /* Panels (console, status strip) */
+  --panel-background-color: rgb(var(--crt-screen) / 60%);
+  --panel-border-color: rgb(255 255 255 / 9%);
+  --panel-hover-border-color: rgb(var(--crt-accent) / 55%);
+  --panel-hover-background-color: rgb(var(--crt-accent) / 7%);
 
   --server-selector-border-color: var(--panel-border-color);
   --server-selector-hover-border-color: var(--panel-hover-border-color);
-  --server-selector-background-color: var(--panel-background-color);
+  --server-selector-background-color: rgb(var(--crt-screen-deep) / 97%);
   --server-selector-hover-background-color: var(--panel-hover-background-color);
 
-  /* Gauges */
-  --gauge-background-color: rgb(var(--crt-phosphor) / 18%);
-  --gauge-progress-color: rgb(var(--crt-phosphor) / 30%);
-  --gauge-pointer-green: rgb(var(--crt-phosphor));
-  --gauge-pointer-pink: rgb(var(--crt-magenta));
-  --gauge-download-color: rgb(var(--crt-magenta));
-  --gauge-upload-color: rgb(var(--crt-phosphor));
+  /* Gauges: the arc is the measurement, the track is barely lit */
+  --gauge-background-color: rgb(255 255 255 / 13%);
+  --gauge-pointer-download: rgb(var(--crt-accent));
+  --gauge-pointer-upload: rgb(var(--crt-alt));
+  --gauge-download-color: rgb(var(--crt-accent));
+  --gauge-upload-color: rgb(var(--crt-alt));
 
-  --ping-and-jitter-primary-text-color: rgb(var(--crt-ink));
-  --ping-and-jitter-secondary-text-color: rgb(var(--crt-muted));
+  /* The glow behind each gauge while it runs. Its strength is driven by the
+     live speed: see --gauge-glow in results.css. */
+  --gauge-bloom-download: rgb(var(--crt-accent) / 16%);
+  --gauge-bloom-upload: rgb(var(--crt-alt) / 14%);
+
+  --readout-primary-text-color: rgb(var(--crt-ink));
+  --readout-secondary-text-color: rgb(var(--crt-muted));
 
   /* Dialogs */
   --popup-background-color: rgb(var(--crt-screen));
-  --popup-shadow-color: rgb(0 0 0);
 }

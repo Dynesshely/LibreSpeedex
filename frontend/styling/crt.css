@@ -4,20 +4,36 @@
  * Layers, back to front:
  *   1. `html` background  - the phosphor screen itself (declared in index.css)
  *   2. `body` background  - dark glass overlay, keeps the UI readable
- *   3. `.crt-overlay`     - scanlines, shadow mask, vignette, grain, refresh sweep
+ *   3. `.crt-overlay`     - scanlines, grain, vignette, refresh sweep
  *
  * Everything here is pure CSS (plus a tiny inline SVG for dithering), so the
  * effect stays sharp at any resolution and costs no extra bytes on the wire.
- * Drop the `.crt-overlay` element from index.html to get rid of the
- * glass layers.
+ * Drop the `.crt-overlay` element from index.html to get rid of the glass.
+ *
+ * The glass sits on top of the content, so every value here is a readability
+ * budget as much as a look: the scanlines are deliberately faint, and the
+ * palette in colors.css is chosen to clear AA even on a darkened row.
+ *
+ * The shadow mask (fine vertical RGB triads) was dropped on purpose: it was the
+ * least visible layer, it aliased into a weave against the scanlines at
+ * fractional DPRs, and it cost contrast for nothing.
  */
 
 /* The phosphor colours themselves live in colors.css, next to the rest of the
    palette, so Tailwind and the hand written CSS share one source of truth. */
 :root {
-  --crt-scanline-opacity: 0.18;
+  --crt-scanline-alpha: 0.1;
+  --crt-scanline-period: 3px;
   --crt-sweep-duration: 8s;
   --crt-flicker-duration: 6s;
+}
+
+/* Keep the scanline pitch constant in physical pixels: at 2x the CSS period
+   has to halve, or the lines read twice as coarse as on a 1x display. */
+@media (min-resolution: 2dppx) {
+  :root {
+    --crt-scanline-period: 1.5px;
+  }
 }
 
 /* The glass in front of the tube */
@@ -33,35 +49,25 @@
     /* horizontal scanlines */
     repeating-linear-gradient(
       to bottom,
-      rgb(0 0 0 / var(--crt-scanline-opacity)) 0,
-      rgb(0 0 0 / var(--crt-scanline-opacity)) 1px,
-      transparent 1px,
-      transparent 3px
-    ),
-    /* shadow mask: faint vertical RGB triads */
-    repeating-linear-gradient(
-      to right,
-      rgb(255 0 90 / 2.5%) 0,
-      rgb(255 0 90 / 2.5%) 1px,
-      rgb(0 255 190 / 2.5%) 1px,
-      rgb(0 255 190 / 2.5%) 2px,
-      rgb(80 120 255 / 2.5%) 2px,
-      rgb(80 120 255 / 2.5%) 3px
+      rgb(0 0 0 / var(--crt-scanline-alpha)) 0,
+      rgb(0 0 0 / var(--crt-scanline-alpha))
+        calc(var(--crt-scanline-period) / 3),
+      transparent calc(var(--crt-scanline-period) / 3),
+      transparent var(--crt-scanline-period)
     ),
     /* analog grain: also dithers the gradients, which would otherwise
        posterise into visible bands on a screen this dark */
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23g)' opacity='0.06'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23g)' opacity='0.045'/%3E%3C/svg%3E"),
     /* vignette + curvature falloff towards the tube edges */
     radial-gradient(
       130% 125% at 50% 50%,
-      transparent 38%,
-      rgb(0 0 0 / 28%) 72%,
-      rgb(0 0 0 / 76%) 100%
+      transparent 44%,
+      rgb(0 0 0 / 22%) 74%,
+      rgb(0 0 0 / 68%) 100%
     );
 
-  background-repeat: repeat, repeat, repeat, no-repeat;
+  background-repeat: repeat, repeat, no-repeat;
   background-size:
-    auto,
     auto,
     220px 220px,
     auto;
@@ -81,9 +87,9 @@
   background: linear-gradient(
     to bottom,
     transparent 0%,
-    rgb(var(--crt-phosphor) / 5%) 38%,
-    rgb(var(--crt-phosphor) / 13%) 50%,
-    rgb(var(--crt-phosphor) / 5%) 62%,
+    rgb(var(--crt-accent) / 5%) 38%,
+    rgb(var(--crt-accent) / 12%) 50%,
+    rgb(var(--crt-accent) / 5%) 62%,
     transparent 100%
   );
 
@@ -99,14 +105,14 @@
 
   background-image: radial-gradient(
       80% 45% at 50% -12%,
-      rgb(255 255 255 / 5%),
+      rgb(255 255 255 / 4%),
       transparent 70%
     ),
     linear-gradient(
       to bottom,
       transparent calc(100% - 2px),
-      rgb(var(--crt-phosphor) / 20%) calc(100% - 2px),
-      rgb(var(--crt-phosphor) / 20%) calc(100% - 1px),
+      rgb(var(--crt-accent) / 18%) calc(100% - 2px),
+      rgb(var(--crt-accent) / 18%) calc(100% - 1px),
       transparent calc(100% - 1px)
     );
   background-size:
@@ -124,19 +130,25 @@
   }
 }
 
+/* A soft, irregular dip rather than a hard metronome blink */
+
 @keyframes crt-flicker {
   0%,
-  88%,
-  90%,
-  94%,
+  86%,
+  89%,
+  92%,
+  96%,
   100% {
     opacity: 1;
   }
-  89% {
-    opacity: 0.86;
-  }
-  93% {
+  87% {
     opacity: 0.95;
+  }
+  90% {
+    opacity: 0.97;
+  }
+  94% {
+    opacity: 0.93;
   }
 }
 
@@ -148,6 +160,19 @@
   }
   .crt-overlay::before {
     animation: none;
+    display: none;
+  }
+}
+
+/* Respect users who asked for more contrast: drop the glass texture entirely
+   rather than making them read through it. */
+
+@media (prefers-contrast: more) {
+  .crt-overlay {
+    --crt-scanline-alpha: 0;
+    animation: none;
+  }
+  .crt-overlay::before {
     display: none;
   }
 }

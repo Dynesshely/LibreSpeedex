@@ -10,9 +10,9 @@ dialog {
   margin-top: 23rem;
 
   background: var(--popup-background-color);
-  border: 1px solid rgb(var(--crt-phosphor) / 30%);
+  border: 1px solid rgb(var(--crt-accent) / 30%);
   box-shadow: 0 0 0 1px rgb(var(--crt-screen-deep)), 0 1rem 4rem rgb(0 0 0 / 70%),
-    inset 0 0 6rem rgb(var(--crt-phosphor) / 5%);
+    inset 0 0 6rem rgb(var(--crt-accent) / 5%);
 
   @media screen and (max-width: 800px) {
     position: fixed;
@@ -78,12 +78,12 @@ dialog {
     & h2 {
       margin: 2rem 0 1rem 0;
       font-size: 1.8rem;
-      color: var(--theme-green);
+      color: var(--accent-color);
     }
 
     & h2::before {
       content: "> ";
-      color: rgb(var(--crt-phosphor) / 50%);
+      color: rgb(var(--crt-accent) / 50%);
     }
 
     & p,
@@ -104,7 +104,7 @@ dialog {
     }
 
     & a {
-      color: var(--theme-green);
+      color: var(--accent-color);
       text-underline-offset: 0.3rem;
       transition: text-underline-offset 0.2s;
 
