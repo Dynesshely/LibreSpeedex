@@ -231,6 +231,27 @@ if [[ "$TELEMETRY" == "true" && ("$MODE" == "frontend" || "$MODE" == "standalone
     sed -i s/\$redact_ip_addresses\ =\ .*\;/\$redact_ip_addresses\ =\ true\;/g /var/www/html/results/telemetry_settings.php
   fi
 
+  # Retention and write limits from the environment. The defaults in the file
+  # already bound the table; these let an operator tighten or disable them.
+  {
+    echo ""
+    echo "// ---- rewritten from the container environment at startup ----"
+    if [[ "$TELEMETRY_RETENTION_DAYS" =~ ^[0-9]+$ ]]; then
+      echo "\$telemetry_retention_days = $TELEMETRY_RETENTION_DAYS;"
+    fi
+    if [[ "$TELEMETRY_RATE_LIMIT" =~ ^[0-9]+$ ]]; then
+      echo "\$telemetry_rate_limit_writes_per_hour = $TELEMETRY_RATE_LIMIT;"
+    fi
+    if [[ "$TELEMETRY_RATE_LIMIT_IP" =~ ^[0-9]+$ ]]; then
+      echo "\$telemetry_rate_limit_writes_per_hour_ip = $TELEMETRY_RATE_LIMIT_IP;"
+    fi
+  } >> /var/www/html/results/telemetry_settings.php
+
+  if [ -z "$PASSWORD" ] || [ "$PASSWORD" == "password" ]; then
+    echo "WARNING: telemetry is on but PASSWORD is unset or still the default." >&2
+    echo "         The admin panel stays closed until a real password is set." >&2
+  fi
+
   mkdir -p /database/
   if is_alpine; then
     chown -R apache /database/

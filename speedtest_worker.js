@@ -65,6 +65,8 @@ let settings = {
 	telemetry_level: 0, // 0=disabled, 1=basic (results only), 2=full (results and timing) 3=debug (results+log)
 	url_telemetry: "results/telemetry.php", // path to the script that adds telemetry data to the database
 	telemetry_extra: "", //extra data that can be passed to the telemetry through the settings
+	client_id: "", // anonymous per-browser id, stored with the result so the browser can find its own records again
+	params_snapshot: "", // JSON of the measurement parameters this run used, so a stored result stays interpretable
     forceIE11Workaround: false //when set to true, it will force the IE11 upload test on all browsers. Debug only
 };
 
@@ -725,9 +727,11 @@ function sendTelemetry(done) {
 		fd.append("jitter", jitterStatus);
 		fd.append("log", settings.telemetry_level > 1 ? log : "");
 		fd.append("extra", settings.telemetry_extra);
+		if (settings.client_id) fd.append("client_id", settings.client_id);
+		if (settings.params_snapshot) fd.append("params", settings.params_snapshot);
 		xhr.send(fd);
 	} catch (ex) {
-		const postData = "extra=" + encodeURIComponent(settings.telemetry_extra) + "&ispinfo=" + encodeURIComponent(JSON.stringify(telemetryIspInfo)) + "&dl=" + encodeURIComponent(dlStatus) + "&ul=" + encodeURIComponent(ulStatus) + "&ping=" + encodeURIComponent(pingStatus) + "&jitter=" + encodeURIComponent(jitterStatus) + "&log=" + encodeURIComponent(settings.telemetry_level > 1 ? log : "");
+		const postData = "extra=" + encodeURIComponent(settings.telemetry_extra) + "&ispinfo=" + encodeURIComponent(JSON.stringify(telemetryIspInfo)) + "&dl=" + encodeURIComponent(dlStatus) + "&ul=" + encodeURIComponent(ulStatus) + "&ping=" + encodeURIComponent(pingStatus) + "&jitter=" + encodeURIComponent(jitterStatus) + "&log=" + encodeURIComponent(settings.telemetry_level > 1 ? log : "") + (settings.client_id ? "&client_id=" + encodeURIComponent(settings.client_id) : "") + (settings.params_snapshot ? "&params=" + encodeURIComponent(settings.params_snapshot) : "");
 		xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 		xhr.send(postData);
 	}

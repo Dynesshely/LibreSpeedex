@@ -31,7 +31,9 @@ CREATE TABLE `speedtest_users` (
   `ul` text,
   `ping` text,
   `jitter` text,
-  `log` longtext
+  `log` longtext,
+  `client_id` text,
+  `params` text
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
@@ -43,6 +45,13 @@ CREATE TABLE `speedtest_users` (
 --
 ALTER TABLE `speedtest_users`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Index for the anonymous client id
+-- (client_id is TEXT, so the index needs a prefix length)
+--
+ALTER TABLE `speedtest_users`
+  ADD INDEX `idx_speedtest_users_client_id` (`client_id`(64));
 
 --
 -- AUTO_INCREMENT for dumped tables

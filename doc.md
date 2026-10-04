@@ -841,6 +841,28 @@ Data is passed as POST parameters:
 * `ping`: ping time
 * `jitter`: jitter value
 * `log`: telemetry log (if `telemetry_level` is set to `full` or higher, empty string otherwise)
+* `client_id`: an anonymous id the browser generated and keeps in `localStorage`, so that browser can
+  find its own results again. Optional, and never derived from the visitor.
+* `params`: JSON snapshot of the measurement parameters the run used, so a stored number stays
+  interpretable. Optional.
+
+The payload is clamped (log 32kB, ispinfo 8kB, extra 1kB) and writes are rate limited per client id and
+per address; see `$telemetry_rate_limit_writes_per_hour` and `$telemetry_rate_limit_writes_per_hour_ip`
+in `results/telemetry_settings.php`. Records older than `$telemetry_retention_days` are swept
+opportunistically during writes.
+
+#### `mine.php`
+
+Returns the results belonging to one anonymous client id, for `my-results.html`. GET parameters:
+`client_id` (required), `limit`, `offset`, and optionally `id` for a single run — which is only
+returned when it belongs to that client id. Never returns the log or the user agent.
+
+#### `admin_api.php`
+
+JSON API behind `results/admin.html`: `session`, `login`, `logout`, `list`, `detail`, `stats`,
+`delete`, `purge`, `export`. Session authenticated with `$stats_password`, which must be changed from
+the `PASSWORD` placeholder before the panel will answer anything. State changing operations require
+the `X-CSRF-Token` header issued by `op=session`.
 
 #### `index.php`
 

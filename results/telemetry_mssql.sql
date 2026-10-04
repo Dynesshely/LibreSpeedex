@@ -23,6 +23,8 @@ CREATE TABLE [dbo].[speedtest_users](
 	[ping] [nvarchar](max) NULL,
 	[jitter] [nvarchar](max) NULL,
 	[log] [nvarchar](max) NULL,
+	[client_id] [nvarchar](64) NULL,
+	[params] [nvarchar](max) NULL,
  CONSTRAINT [PK_speedtest_users] PRIMARY KEY CLUSTERED
 (
 	[id] ASC
@@ -31,6 +33,9 @@ CREATE TABLE [dbo].[speedtest_users](
 GO
 
 ALTER TABLE [dbo].[speedtest_users] ADD  CONSTRAINT [DF_speedtest_users_timestamp]  DEFAULT (getdate()) FOR [timestamp]
+GO
+
+CREATE INDEX [idx_speedtest_users_client_id] ON [dbo].[speedtest_users] ([client_id])
 GO
 
 
