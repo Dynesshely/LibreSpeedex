@@ -70,6 +70,40 @@ if [ "$MODE" == "backend" ]; then
   fi
 fi
 
+# Backend policy from the environment. Appended rather than substituted: the
+# trusted proxy list is an array, and a trailing assignment is the one form that
+# cannot be broken by the value it carries.
+if [ -f /var/www/html/backend/backend_settings.php ]; then
+  {
+    echo ""
+    echo "// ---- rewritten from the container environment at startup ----"
+    if [ -n "$TRUSTED_PROXIES" ]; then
+      echo "\$trusted_proxies = explode(',', '$TRUSTED_PROXIES');"
+    fi
+    if [[ "$GARBAGE_MAX_CHUNK_MB" =~ ^[0-9]+$ ]]; then
+      echo "\$garbage_max_chunk_mb = $GARBAGE_MAX_CHUNK_MB;"
+    fi
+    if [[ "$GARBAGE_MAX_CONCURRENT" =~ ^[0-9]+$ ]]; then
+      echo "\$garbage_max_concurrent = $GARBAGE_MAX_CONCURRENT;"
+    fi
+    if [[ "$GARBAGE_MAX_CONCURRENT_PER_IP" =~ ^[0-9]+$ ]]; then
+      echo "\$garbage_max_concurrent_per_ip = $GARBAGE_MAX_CONCURRENT_PER_IP;"
+    fi
+    if [ "$SERVER_INFO_EXPOSE_INTERFACE" == "false" ]; then
+      echo "\$server_info_expose_interface = false;"
+    fi
+    if [ "$SERVER_INFO_PUBLIC_IP" == "false" ]; then
+      echo "\$server_info_public_ip = false;"
+    fi
+    if [[ "$SERVER_INFO_PUBLIC_IP_TTL" =~ ^[0-9]+$ ]]; then
+      echo "\$server_info_public_ip_ttl = $SERVER_INFO_PUBLIC_IP_TTL;"
+    fi
+    if [ -n "$SERVER_INFO_PUBLIC_IP_URL" ]; then
+      echo "\$server_info_public_ip_url = '$SERVER_INFO_PUBLIC_IP_URL';"
+    fi
+  } >> /var/www/html/backend/backend_settings.php
+fi
+
 # Set up index.php for frontend-only or standalone modes
 if [[ "$MODE" == "frontend" || "$MODE" == "dual" ||  "$MODE" == "standalone" ]]; then
   # Copy the page. There is a single design now: the Terminal/CRT frontend.
@@ -91,8 +125,11 @@ if [[ "$MODE" == "frontend" || "$MODE" == "dual" ||  "$MODE" == "standalone" ]];
     exit 1
   else
     echo "no /servers.json found, create one for local host"
-    # generate config for just the local server
-    echo '[{"name":"local","server":"/backend",  "dlURL": "garbage.php", "ulURL": "empty.php", "pingURL": "empty.php", "getIpURL": "getIP.php", "sponsorName": "", "sponsorURL": "", "id":1 }]' > /var/www/html/server-list.json
+    # generate config for just the local server. The name is the node label the
+    # panel shows above the endpoint address; "local" is only the fallback.
+    NODE_NAME=${SERVER_NODE_NAME:-local}
+    NODE_NAME_JSON=$(printf '%s' "$NODE_NAME" | sed 's/\\/\\\\/g; s/"/\\"/g')
+    printf '%s' '[{"name":"'"$NODE_NAME_JSON"'","server":"/backend",  "dlURL": "garbage.php", "ulURL": "empty.php", "pingURL": "empty.php", "getIpURL": "getIP.php", "sponsorName": "", "sponsorURL": "", "id":1 }]' > /var/www/html/server-list.json
   fi
   if [ ! -z "$SERVER_LIST_URL" ]; then
     echo "using SERVER_LIST_URL for frontend server list"

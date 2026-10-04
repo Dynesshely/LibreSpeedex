@@ -751,11 +751,40 @@ See the code for more implementation details.
 
 ### `backend` files
 
+#### `backend_settings.php`
+
+Backend policy, one place for the things an operator has to decide rather than discover:
+
+* `$trusted_proxies`: addresses or CIDR blocks whose forwarding headers (`X-Forwarded-For`,
+  `X-Real-IP`, `Client-IP`, `CF-Connecting-IP`) are believed. Requests from anywhere else use their
+  socket peer address, which is the only value a client cannot set. `'*'` trusts every peer, which is
+  only reasonable when a reverse proxy rewrites `REMOTE_ADDR` to itself.
+* `$garbage_max_chunk_mb`, `$garbage_max_concurrent`, `$garbage_max_concurrent_per_ip`: the ceiling on
+  a single download request and on how many streams may be in flight, globally and per client address.
+  Concurrency is enforced with a pool of `flock`ed slot files, so a stream that is aborted or killed
+  releases its slot with the process — no counters to leak. A refused request gets `503` with
+  `Retry-After`. Set a limit to `0` to disable it.
+* `$server_info_expose_interface`, `$server_info_public_ip`, `$server_info_public_ip_ttl`,
+  `$server_info_public_ip_url`: what `serverInfo.php` is allowed to reveal and how long the public
+  address lookup is cached.
+
+In Docker every one of these can be set from the environment instead; see
+[doc_docker.md](doc_docker.md).
+
+#### `serverInfo.php`
+
+Describes the machine that answered: the host the visitor dialled (`HTTP_HOST`), the interface address
+it was reached on (`SERVER_ADDR`), its public egress address (cached), the protocol, and the node name
+from `server-list.json`. The frontend asks the *selected* node for this, so a remote test node answers
+about itself rather than about the page's host.
+
 #### `garbage.php`
 
 Uses OpenSSL to generate a stream of incompressible garbage data for the download test.
 
-If accepts a `ckSize` GET parameter, which specifies how much garbage data to generate in megabytes (4-1024).
+If accepts a `ckSize` GET parameter, which specifies how much garbage data to generate in megabytes.
+The request is honoured up to `$garbage_max_chunk_mb`, which is what keeps the endpoint from being a
+free bandwidth amplifier; the engine asks for 100MB per stream by default.
 
 #### `empty.php`
 
@@ -777,7 +806,7 @@ If `isp` is set, the output is a JSON string containing:
 
 If `isp` is not set, the output is just a string containing the client's IP address.
 
-Note: if your server is behind some proxy, firewall, VPN, etc., the client's IP address may not be detected properly. If this happens, you must analyze the traffic coming from the client to find the name of the HTTP header that contains the original IP address. `getIP.php` contains some of these headers but not all of them.
+Note: if your server is behind some proxy, firewall, VPN, etc., the client's IP address may not be detected properly. If this happens, list the proxy in `$trusted_proxies` in `backend/backend_settings.php`; forwarding headers are only read when the request actually arrives from an address on that list.
 
 #### CORS headers
 
@@ -916,8 +945,13 @@ Make sure your server is sending the `Connection:keep-alive` header
 
 #### The server is behind a load balancer, proxy, etc. and I get the wrong IP address
 
-Edit getIP.php and replace lines 14-23 with what is more appropriate in your scenario.
-Example: `$ip = $_SERVER['HTTP_X_FORWARDED_FOR'];`
+List the proxy in `$trusted_proxies` in `backend/backend_settings.php` (or set the `TRUSTED_PROXIES`
+environment variable in Docker). Forwarding headers are only believed when the request actually
+arrives from an address on that list; from anywhere else the socket peer address wins, because
+`X-Forwarded-For` and friends can be set by anyone.
+
+Example: `$trusted_proxies = ['172.16.0.0/12'];` for a proxy on a Docker bridge network, or
+`['*']` if every request reaches PHP through a proxy that rewrites `REMOTE_ADDR`.
 
 #### The results sharing just generates a blank image
 

@@ -23,9 +23,13 @@ COPY frontend/ /speedtest/frontend
 
 COPY results/*.php /speedtest/results/
 COPY results/*.ttf /speedtest/results/
+# The admin panel is static markup; the PHP beside it is its API.
+COPY results/*.html /speedtest/results/
 
 COPY *.js /speedtest/
 COPY index.html /speedtest/
+# The visitor's own records page.
+COPY my-results.html /speedtest/
 COPY settings.json /speedtest/
 COPY server-list.json /speedtest/
 COPY stability.html /speedtest/
@@ -44,6 +48,22 @@ ENV TELEMETRY=false
 ENV ENABLE_ID_OBFUSCATION=false
 ENV REDACT_IP_ADDRESSES=false
 ENV WEBPORT=8080
+
+# Backend policy. TRUSTED_PROXIES is the list of peers whose forwarding headers
+# are believed; empty means only the addresses in backend/backend_settings.php.
+ENV TRUSTED_PROXIES=""
+ENV GARBAGE_MAX_CHUNK_MB=256
+ENV GARBAGE_MAX_CONCURRENT=64
+ENV GARBAGE_MAX_CONCURRENT_PER_IP=16
+ENV SERVER_INFO_EXPOSE_INTERFACE=true
+ENV SERVER_INFO_PUBLIC_IP=true
+ENV SERVER_INFO_PUBLIC_IP_TTL=3600
+# The node label shown above the endpoint address
+ENV SERVER_NODE_NAME=local
+# Telemetry retention and write limits
+ENV TELEMETRY_RETENTION_DAYS=90
+ENV TELEMETRY_RATE_LIMIT=60
+ENV TELEMETRY_RATE_LIMIT_IP=240
 
 # https://httpd.apache.org/docs/2.4/stopping.html#gracefulstop
 STOPSIGNAL SIGWINCH
