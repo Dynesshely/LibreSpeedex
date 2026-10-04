@@ -11,3 +11,6 @@ results/speedtest_telemetry.db-wal
 
 # Local scratch: harness output, screenshots, throwaway probes
 .scratch/
+
+# The telemetry harness builds its sandbox databases here.
+tests/telemetry/tmp/
