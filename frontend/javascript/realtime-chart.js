@@ -43,6 +43,8 @@
   let peakLabels = { dl: null, ul: null };
   let colors = FALLBACK_COLORS;
   let paletteReady = false;
+  // The unit word is part of the readout, not of the drawing: see setUnit().
+  let unitWord = "mbit/s";
 
   const series = { dl: [], ul: [] };
   let startedAt = 0;
@@ -268,7 +270,7 @@
     readout.textContent =
       `t+${elapsed.toFixed(1)}s  ` +
       `dl ${formatSpeed(lastValue(series.dl))}  ` +
-      `ul ${formatSpeed(lastValue(series.ul))} mbit/s`;
+      `ul ${formatSpeed(lastValue(series.ul))} ${unitWord}`;
   }
 
   /* ------------------------------------------------------------------ loop */
@@ -309,6 +311,15 @@
   /* ------------------------------------------------------------- public API */
 
   window.RealtimeChart = {
+    /**
+     * The axis label follows the unit the measurement is reported in, so a
+     * Mibit/s run never leaves "mbit/s" sitting next to the numbers.
+     */
+    setUnit: function (word) {
+      unitWord = word || "mbit/s";
+      updateReadout();
+    },
+
     begin: function () {
       series.dl = [];
       series.ul = [];

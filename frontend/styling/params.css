@@ -1,0 +1,285 @@
+/**
+ * The measurement bench: the parameter panel, and the endpoint readout that
+ * says where the traffic actually goes.
+ *
+ * Both are part of the console family rather than a separate "settings" screen:
+ * same frame, same grey, same 4px grid. The only colour is the one the palette
+ * reserves for facts — accent on the address and on the active choice — because
+ * a dial that is set is a statement about what was measured.
+ */
+
+.params-panel {
+  width: 100%;
+  border: 1px solid var(--panel-border-color);
+  background-color: rgb(var(--crt-screen) / 45%);
+  text-align: left;
+}
+
+.params-summary {
+  display: flex;
+  width: 100%;
+  align-items: baseline;
+  gap: 1.2rem;
+  padding: 1rem 1.6rem;
+  border: 0;
+  background: transparent;
+  color: var(--primary-text-color);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.2s, background-color 0.2s;
+
+  &:hover {
+    background-color: rgb(var(--crt-accent) / 6%);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgb(var(--crt-accent) / 70%);
+    outline-offset: -2px;
+  }
+}
+
+.params-panel.open .params-summary {
+  border-bottom: 1px solid var(--panel-border-color);
+}
+
+.params-readout {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 1.3rem;
+  color: var(--primary-text-color);
+}
+
+.params-action {
+  flex: 0 0 auto;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgb(var(--crt-accent) / 85%);
+}
+
+/* `display: grid` would otherwise beat the UA rule for [hidden], leaving the
+   collapsed panel rendered but invisible to its own JavaScript. */
+.params-body:not([hidden]) {
+  display: grid;
+  gap: 1.6rem;
+  padding: 1.6rem;
+}
+
+.params-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.param-preset,
+.params-button {
+  padding: 0.5rem 1.1rem;
+  border: 1px solid var(--panel-border-color);
+  background-color: transparent;
+  color: var(--secondary-text-color);
+  font: inherit;
+  font-size: 1.2rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background-color 0.2s;
+
+  &:hover {
+    border-color: var(--panel-hover-border-color);
+    background-color: var(--panel-hover-background-color);
+    color: var(--primary-text-color);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgb(var(--crt-accent) / 70%);
+    outline-offset: 2px;
+  }
+}
+
+/* The active preset is the only one allowed to look chosen. */
+.param-preset.active {
+  border-color: rgb(var(--crt-accent) / 60%);
+  background-color: rgb(var(--crt-accent) / 10%);
+  color: rgb(var(--crt-accent));
+}
+
+.params-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+  gap: 1.4rem 2.4rem;
+}
+
+.param {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.param-name {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--secondary-text-color);
+}
+
+.param-suffix {
+  font-style: normal;
+  color: rgb(var(--crt-muted) / 70%);
+}
+
+.param select {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--panel-border-color);
+  border-radius: 0;
+  background-color: rgb(var(--crt-screen-deep) / 85%);
+  color: var(--primary-text-color);
+  font: inherit;
+  font-size: 1.4rem;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s;
+
+  &:hover {
+    border-color: var(--panel-hover-border-color);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgb(var(--crt-accent) / 70%);
+    outline-offset: 2px;
+  }
+}
+
+.param-hint {
+  font-size: 1.1rem;
+  line-height: 1.45;
+  color: rgb(var(--crt-muted) / 85%);
+}
+
+.params-advanced {
+  border-top: 1px solid var(--panel-border-color);
+  padding-top: 1.2rem;
+
+  & summary {
+    font-size: 1.1rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--secondary-text-color);
+    cursor: pointer;
+    list-style: none;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    &::before {
+      content: "[+] ";
+      color: rgb(var(--crt-accent) / 60%);
+    }
+
+    &:hover {
+      color: var(--primary-text-color);
+    }
+
+    &:focus-visible {
+      outline: 2px solid rgb(var(--crt-accent) / 70%);
+      outline-offset: 3px;
+    }
+  }
+
+  &[open] summary::before {
+    content: "[-] ";
+  }
+
+  & .params-grid {
+    margin-top: 1.4rem;
+  }
+}
+
+.params-note {
+  margin: 0;
+  min-height: 1.6rem;
+  font-size: 1.1rem;
+  color: rgb(var(--crt-alt) / 85%);
+}
+
+.params-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+/* ---- the endpoint readout, inside the status strip ---- */
+
+.server-endpoint {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-top: 0.9rem;
+  font-size: 1.4rem;
+  letter-spacing: 0.02em;
+
+  /* The address is the measured fact of this cell, so it carries the accent. */
+  & #server-address {
+    color: rgb(var(--crt-accent));
+    word-break: break-all;
+  }
+}
+
+.server-detail-toggle {
+  padding: 0 0.4rem;
+  border: 0;
+  background: transparent;
+  color: rgb(var(--crt-accent) / 70%);
+  font: inherit;
+  font-size: 1.2rem;
+  cursor: pointer;
+
+  &:hover {
+    color: rgb(var(--crt-accent));
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgb(var(--crt-accent) / 70%);
+    outline-offset: 2px;
+  }
+}
+
+/* Same trap as .params-body: a display rule here would beat [hidden] and leave
+   the detail rows permanently open. */
+.server-detail:not([hidden]) {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.2rem 1rem;
+  margin: 0.8rem 0 0;
+  font-size: 1.2rem;
+
+  & dt {
+    color: var(--secondary-text-color);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 1.1rem;
+  }
+
+  & dd {
+    margin: 0;
+    color: var(--primary-text-color);
+    word-break: break-all;
+  }
+}
+
+.server-note {
+  margin: 0.6rem 0 0;
+  font-size: 1.1rem;
+  line-height: 1.45;
+  color: rgb(var(--crt-muted) / 85%);
+}

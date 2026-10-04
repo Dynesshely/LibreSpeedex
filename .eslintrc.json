@@ -6,7 +6,7 @@
   },
   "extends": "eslint:recommended",
   "parserOptions": {
-    "ecmaVersion": 2015,
+    "ecmaVersion": 2020,
     "sourceType": "script"
   },
   "globals": {
@@ -24,7 +24,8 @@
     "clearInterval": "readonly",
     "postMessage": "readonly",
     "onmessage": "writable",
-    "addEventListener": "readonly"
+    "addEventListener": "readonly",
+    "globalThis": "readonly"
   },
   "rules": {
     "no-unused-vars": [

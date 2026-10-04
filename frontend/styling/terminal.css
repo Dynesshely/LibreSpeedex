@@ -61,9 +61,15 @@ body {
   display: flex;
   flex-direction: column;
   width: 100%;
-  flex: 1 1 auto;
+  /* Grows into the slack on a tall viewport, but never shrinks below its own
+     content: the plot has a floor height, so a squeezed frame would push the
+     legend across the status strip underneath it. When the content no longer
+     fits, the page scrolls instead. */
+  flex: 1 0 auto;
   min-height: 0;
-  max-height: 68rem;
+  /* Enough for the gauges, the plot floor and the tallest status strip (server
+     detail expanded); the plot shrinks before anything can reach the edge. */
+  max-height: 76rem;
   border: 1px solid var(--panel-border-color);
   background-color: rgb(var(--crt-screen) / 45%);
   box-shadow: inset 0 0 7rem rgb(var(--crt-accent) / 4%);

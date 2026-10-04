@@ -20,6 +20,7 @@
   </script>
   <script type="text/javascript" src="frontend/javascript/crt-background.js"></script>
   <script type="text/javascript" src="frontend/javascript/realtime-chart.js"></script>
+  <script type="text/javascript" src="frontend/javascript/test-params.js"></script>
   <script type="text/javascript" src="frontend/javascript/index.js"></script>
   <title>LibreSpeedex</title>
 </head>
@@ -58,14 +59,14 @@
         <div class="gauge download" id="download-gauge">
           <div class="progress"></div>
           <div class="speed"></div>
-          <h1><span id="download-speed">00</span> Mbps</h1>
+          <h1><span id="download-speed">00</span> <span data-unit>Mbps</span></h1>
           <h2>Download</h2>
         </div>
 
         <div class="gauge upload" id="upload-gauge">
           <div class="progress"></div>
           <div class="speed"></div>
-          <h1><span id="upload-speed">00</span> Mbps</h1>
+          <h1><span id="upload-speed">00</span> <span data-unit>Mbps</span></h1>
           <h2>Upload</h2>
         </div>
 
@@ -89,7 +90,9 @@
           <span id="chart-readout" class="text-accent/80">standby</span>
         </header>
 
-        <div class="relative min-h-[18rem] flex-1">
+        <!-- The plot takes whatever the frame has left, but has a floor so it is
+             still readable when the status strip below it grows. -->
+        <div class="relative min-h-[12rem] flex-1">
           <canvas id="realtime-chart" class="absolute inset-0 h-full w-full"></canvas>
         </div>
 
@@ -102,7 +105,7 @@
             <i class="legend-swatch bg-alt"></i> upload
             <b class="legend-peak" id="peak-upload">&nbsp;</b>
           </span>
-          <span class="ml-auto normal-case tracking-label">x: elapsed&nbsp;&nbsp;y: mbit/s</span>
+          <span class="ml-auto normal-case tracking-label">x: elapsed&nbsp;&nbsp;y: <span data-unit-legend>mbit/s</span></span>
         </p>
       </section>
 
@@ -121,6 +124,25 @@
             <ul class="servers"></ul>
             <p class="sponsor" id="sponsor">&nbsp;</p>
           </div>
+
+          <!-- The node name above is a label someone chose; the endpoint below
+               is the address the traffic actually goes to, which is the thing
+               the numbers have to be read against. -->
+          <p class="server-endpoint">
+            <span class="status-label">endpoint</span>
+            <span id="server-address">—</span>
+            <button type="button" id="server-detail-toggle" class="server-detail-toggle" aria-expanded="false"
+              aria-controls="server-detail">[?]</button>
+          </p>
+          <dl id="server-detail" class="server-detail" hidden>
+            <dt>interface</dt>
+            <dd id="server-interface">—</dd>
+            <dt>public</dt>
+            <dd id="server-public">—</dd>
+            <dt>protocol</dt>
+            <dd id="server-proto">—</dd>
+          </dl>
+          <p id="server-note" class="server-note" role="status"></p>
         </div>
 
         <div class="status-cell">
@@ -133,6 +155,32 @@
       </div>
     </section>
 
+    <!-- The measurement dials. Collapsed: the screen is the instrument, this is
+         the bench behind it. -->
+    <section id="params-panel" class="params-panel">
+      <button type="button" id="params-toggle" class="params-summary" aria-expanded="false" aria-controls="params-body">
+        <span class="status-label" id="params-heading">measurement parameters</span>
+        <span id="params-readout" class="params-readout">&mdash;</span>
+        <span class="params-action">[ change ]</span>
+      </button>
+
+      <div id="params-body" class="params-body" hidden aria-labelledby="params-heading">
+        <div id="params-presets" class="params-presets" role="group" aria-label="Parameter presets"></div>
+        <div id="params-basic" class="params-grid"></div>
+
+        <details class="params-advanced">
+          <summary>advanced</summary>
+          <div id="params-advanced" class="params-grid"></div>
+        </details>
+
+        <p id="params-note" class="params-note" role="status"></p>
+        <div class="params-actions">
+          <button type="button" id="params-reset" class="params-button">reset</button>
+          <button type="button" id="params-share" class="params-button">copy link</button>
+        </div>
+      </div>
+    </section>
+
     <button id="share-results" class="hidden border border-accent/40 bg-transparent px-8 py-2.5 text-[1.4rem]
         tracking-terminal text-accent transition-colors hover:bg-accent/10">
       Share results
@@ -141,6 +189,9 @@
 
   <footer class="relative z-10 pb-10 pt-2 text-center">
     <nav class="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-[1.25rem] tracking-terminal">
+      <!-- Revealed once telemetry is known to be on: a records page on a server
+           that stores nothing is a dead end. -->
+      <a class="terminal-link hidden" id="my-results-link" href="my-results.html">my records</a>
       <a class="terminal-link" href="stability.html">stability test</a>
       <a class="terminal-link" href="https://github.com/librespeed/speedtest">source code</a>
     </nav>
@@ -173,11 +224,17 @@
         <li>Test ID</li>
         <li>Time of testing</li>
         <li>Test results (download and upload speed, ping and jitter)</li>
+        <li>The measurement parameters your test ran with</li>
         <li>IP address</li>
         <li>ISP information</li>
         <li>Approximate location (inferred from IP address, not GPS)</li>
         <li>User agent and browser locale</li>
         <li>Test log (contains no personal information)</li>
+        <li>
+          An anonymous browser ID: a random value this browser generates and
+          keeps locally. It is not derived from you or your device, and it is
+          only used so this browser can list the tests it ran.
+        </li>
       </ul>
 
       <h2>How we use the data</h2>
@@ -206,6 +263,10 @@
         either the ID of the test or your IP address. This is the only way to
         identify your data, without this information we won't be able to
         comply with your request.
+      </p>
+      <p>
+        You can also keep a test out of the database in the first place: open
+        the measurement parameters and switch "save this result" off.
       </p>
       <p>
         Contact this email address for all deletion requests:

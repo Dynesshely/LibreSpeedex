@@ -392,6 +392,14 @@ Before starting the test, you can change some of the settings from their default
 s.setParameter("parameter_name",value);
 ```
 
+The bundled frontend exposes a subset of these as a collapsible "measurement parameters" panel
+(`frontend/javascript/test-params.js`): test duration, ping sample count, stream counts, the
+reported unit, the overhead compensation factor, the grace times, and a per-run opt-out of storing
+the result. The choice is kept in `localStorage` and mirrored into the page URL as `?p=…`, so a link
+carries the settings that produced a number. What is *not* exposed is anything that decides where the
+traffic goes (`url_dl`, `url_ul`, `url_ping`, `url_getIp`) — a visitor who can retarget those turns
+the server into a reflector.
+
 For instance, to enable telemetry we can use:
 
 ```js

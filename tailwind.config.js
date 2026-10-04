@@ -9,7 +9,13 @@
  * Build with `npm run css` (input: frontend/styling/tailwind.src.css).
  */
 module.exports = {
-  content: ["./index.html", "./stability.html", "./frontend/javascript/**/*.js"],
+  content: [
+    "./index.html",
+    "./stability.html",
+    "./my-results.html",
+    "./results/admin.html",
+    "./frontend/javascript/**/*.js",
+  ],
   /* The project ships its own reset in frontend/styling/index.css and the
      gauges rely on it. Tailwind's preflight would fight with that. */
   corePlugins: { preflight: false },

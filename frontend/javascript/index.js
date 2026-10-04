@@ -5,6 +5,8 @@
  * See https://github.com/librespeed/speedtest/issues/585
  */
 
+/* global Speedtest -- the engine, loaded from speedtest.js before this file */
+
 // States the UI can be in
 const INITIALIZING = 0;
 const READY = 1;
@@ -29,6 +31,9 @@ window.addEventListener("DOMContentLoaded", async () => {
   createSpeedtest();
   hookUpButtons();
   startRenderingLoop();
+  // The panel has to exist before settings.json lands: the server defaults
+  // become its base, and a visitor's stored choice is layered on top of that.
+  if (window.TestParams) window.TestParams.init();
   applySettingsJSON();
   applyServerListJSON();
 });
@@ -86,6 +91,9 @@ function startButtonClickHandler() {
   switch (testState.state) {
     case READY:
     case FINISHED:
+      // Apply the current dials first: setParameter is only legal while the
+      // worker is idle, and a run must be recorded with the settings it used.
+      if (window.TestParams) window.TestParams.applyTo(testState.speedtest);
       testState.speedtest.start();
       testState.initialGaugeScrollPending = true;
       testState.state = RUNNING;
@@ -161,8 +169,11 @@ async function applySettingsJSON() {
       ) {
         testState.telemetryEnabled = true;
         document.querySelector("#privacy-notice").classList.remove("hidden");
+        document.querySelector("#my-results-link").classList.remove("hidden");
       }
     }
+    // Server defaults are the baseline the parameter panel starts from.
+    if (window.TestParams) window.TestParams.setBase(settings);
   } catch (error) {
     console.error("Failed to fetch settings:", error);
   }
@@ -314,6 +325,109 @@ function selectServer(server) {
 }
 
 /**
+ * Say where the traffic actually goes.
+ *
+ * The node name above this line is a label someone chose. This is the address
+ * the browser opens its sockets against, resolved from the selected node's own
+ * base URL — so it stays true whether the visitor arrived by LAN address, by
+ * public address or by hostname, and it needs nothing from the server to be
+ * correct.
+ *
+ * The detail line adds the part only the server can know: its own interface
+ * address, and the address the rest of the internet sees it as
+ * (backend/serverInfo.php). A node that does not offer that file simply shows
+ * the address and says so.
+ */
+async function refreshServerEndpoint() {
+  const addressEl = document.querySelector("#server-address");
+  if (!addressEl) return;
+
+  let server = null;
+  try {
+    server = testState.speedtest.getSelectedServer();
+  } catch (error) {
+    return; // no server selected yet
+  }
+  if (!server || !server.server) return;
+
+  let base;
+  try {
+    base = new URL(server.server, window.location.href);
+  } catch (error) {
+    return;
+  }
+
+  addressEl.textContent = base.host;
+
+  const detail = document.querySelector("#server-detail");
+  const toggle = document.querySelector("#server-detail-toggle");
+  const note = document.querySelector("#server-note");
+  const interfaceCell = document.querySelector("#server-interface");
+  const publicCell = document.querySelector("#server-public");
+  const protoCell = document.querySelector("#server-proto");
+
+  if (toggle.dataset.hooked !== "1") {
+    toggle.dataset.hooked = "1";
+    toggle.addEventListener("click", () => {
+      const open = detail.hidden;
+      detail.hidden = !open;
+      toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+  }
+
+  detail.hidden = true;
+  toggle.setAttribute("aria-expanded", "false");
+  note.textContent = "";
+  toggle.hidden = true;
+
+  let info = null;
+  try {
+    const infoUrl = new URL("serverInfo.php", base);
+    // A node on another origin only answers if we ask for CORS explicitly, on
+    // purpose: the same rule the rest of the backend follows.
+    if (base.host !== window.location.host) infoUrl.searchParams.set("cors", "true");
+    const response = await fetch(infoUrl, { cache: "no-store" });
+    if (response.ok) info = await response.json();
+  } catch (error) {
+    info = null; // an older node, a different server implementation, or CORS
+  }
+
+  const hostname = base.hostname;
+  const isIpLiteral =
+    /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname) || hostname.indexOf(":") !== -1;
+
+  const notes = [];
+  if (!isIpLiteral) {
+    notes.push("a hostname — your DNS decides which address that is");
+  }
+  if (info) {
+    toggle.hidden = false;
+    interfaceCell.textContent = info.interface || "not reported";
+    publicCell.textContent = info.public || "not available";
+    protoCell.textContent = info.proto || "—";
+
+    if (info.interface) {
+      notes.push(
+        info.interface === hostname
+          ? "this is the host's own interface"
+          : "forwarded — the host itself answers on " + info.interface
+      );
+    }
+    if (info.public) {
+      notes.push(
+        info.public === hostname
+          ? "this is the public address"
+          : "public egress is " + info.public
+      );
+    }
+  } else {
+    notes.push("this node does not report its addresses");
+  }
+
+  note.textContent = notes.join(" · ");
+}
+
+/**
  * Start the requestAnimationFrame UI rendering loop
  */
 function startRenderingLoop() {
@@ -333,8 +447,8 @@ function startRenderingLoop() {
   const uploadProgress = document.querySelector("#upload-gauge .progress");
   const downloadGauge = document.querySelector("#download-gauge .speed");
   const uploadGauge = document.querySelector("#upload-gauge .speed");
-  const downloadText = document.querySelector("#download-gauge span");
-  const uploadText = document.querySelector("#upload-gauge span");
+  const downloadText = document.querySelector("#download-speed");
+  const uploadText = document.querySelector("#upload-speed");
 
   const pingAndJitter = document.querySelectorAll(".ping, .jitter");
   const ping = document.querySelector("#ping");
@@ -432,6 +546,7 @@ function startRenderingLoop() {
         sponsor.innerHTML = "&nbsp;";
       }
       testState.selectedServerDirty = false;
+      refreshServerEndpoint();
     }
 
     // Activate the gauges when test running or finished
