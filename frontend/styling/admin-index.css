@@ -1,0 +1,126 @@
+/**
+ * The admin panel.
+ *
+ * The records furniture (KPI strip, table, snapshot, chart frame, login box) is
+ * shared with the "my records" page through records.css; only the admin page's
+ * own pieces are here. `tailwind.css` is imported last so a utility class in the
+ * markup always beats a component default above.
+ */
+
+@import url("screen.css");
+@import url("colors.css");
+@import url("fonts.css");
+@import url("main.css");
+@import url("crt.css");
+@import url("terminal.css");
+@import url("records.css");
+@import url("tailwind.css");
+
+/* Nine columns: the readings, the ISP string and the two row actions. It stays
+   inside its frame at 1300px and slides sideways below that. */
+table.records {
+  min-width: 92rem;
+}
+
+.login-box h2 {
+  font-size: 1.8rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--primary-text-color);
+
+  /* A prompt marker, like the tagline: this is a command you are running. */
+  &::before {
+    content: "> ";
+    color: rgb(var(--crt-accent) / 55%);
+  }
+}
+
+/* The client id is long and opaque; the table shows its head and keeps the
+   whole value in the title, the detail panel shows all of it. */
+.trunc-client {
+  max-width: 10rem;
+}
+
+/* The row actions sit in one line and never wrap into the ISP column. */
+.row-actions {
+  display: flex;
+  gap: 0.8rem;
+  white-space: nowrap;
+}
+
+/* The delete confirm: a full width row under the one it is about, naming the
+   record before anything is removed. */
+.confirm-row td {
+  padding: 1.2rem 1.4rem;
+  background-color: rgb(var(--crt-bad) / 6%);
+  color: var(--primary-text-color);
+  white-space: normal;
+}
+
+.confirm-row .btn-row {
+  margin-top: 1rem;
+}
+
+/* Maintenance: two blocks stacked in one panel, hairline between them. */
+.maintenance-block {
+  padding: 2rem;
+}
+
+.maintenance-block + .maintenance-block {
+  border-top: 1px solid var(--panel-border-color);
+}
+
+.maintenance-block h3 {
+  margin-bottom: 0.8rem;
+  font-size: 1.4rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: var(--primary-text-color);
+}
+
+.maintenance-block .field {
+  max-width: 40rem;
+  margin-top: 1.6rem;
+}
+
+/* Result of a maintenance action: its own small box, because it lives inside a
+   block rather than in the console's stack of sections. */
+.maintenance-note {
+  margin-top: 1.6rem;
+  padding: 1.2rem 1.6rem;
+  border: 1px solid var(--panel-border-color);
+}
+
+/* The gate's state note and the login error sit inside the login wrap, so they
+   draw their own box too. */
+.login-wrap .note {
+  max-width: 48rem;
+  margin: 0 auto 2.4rem;
+  border: 1px solid var(--panel-border-color);
+  background-color: rgb(var(--crt-screen) / 40%);
+}
+
+.login-box .note {
+  margin-top: 2.4rem;
+  padding: 1.2rem 1.6rem;
+  border: 1px solid rgb(var(--crt-bad) / 35%);
+}
+
+/* Filter fields carry their own width: a search box wants room, a date and a
+   number do not. */
+#f-q {
+  min-width: 22rem;
+}
+
+#f-from,
+#f-to,
+#f-min-dl,
+#f-min-ul {
+  min-width: 13rem;
+}
+
+#f-order,
+#f-limit {
+  min-width: 15rem;
+}

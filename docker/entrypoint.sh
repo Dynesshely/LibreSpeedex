@@ -35,6 +35,9 @@ rm -rf /var/www/html/*
 # Copy frontend files
 cp /speedtest/*.js /var/www/html/
 cp /speedtest/stability.html /var/www/html/
+# The records page only has anything to show when telemetry is on, but the file
+# is harmless without it and the UI hides the link itself.
+cp /speedtest/my-results.html /var/www/html/ 2>/dev/null || true
 
 # Copy PWA metadata and icons
 cp /speedtest/favicon.ico /var/www/html/

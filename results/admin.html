@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <meta name="description"
+    content="LibreSpeedex administration: every recorded test, the last 30 days at a glance, and the maintenance levers." />
+  <link rel="shortcut icon" href="../frontend/images/favicon.svg" />
+  <meta name="robots" content="noindex" />
+  <meta name="theme-color" content="#0A0B0D" />
+  <!-- Stylesheet first: the page script reads the palette from it. -->
+  <link rel="stylesheet" type="text/css" href="../frontend/styling/admin-index.css" />
+  <script type="text/javascript" src="../frontend/javascript/crt-background.js"></script>
+  <title>LibreSpeedex - Administration</title>
+</head>
+
+<body class="relative flex min-h-screen flex-col font-term text-ink antialiased">
+  <!-- CRT glass: scanlines, grain, vignette, refresh sweep (crt.css) -->
+  <div class="crt-overlay" aria-hidden="true"></div>
+  <!-- Pixelated terminal backdrop: grid activity + data streams -->
+  <canvas id="crt-pixels" class="crt-pixels" aria-hidden="true"></canvas>
+
+  <header class="relative z-10 flex items-center justify-between gap-4 px-6 py-6 sm:px-12">
+    <a class="wordmark" href="../" aria-label="LibreSpeedex">LIBRE<span>S</span>PEEDEX</a>
+    <p class="hidden items-center gap-3 text-[1.2rem] uppercase tracking-label text-muted sm:flex">
+      <span class="crt-led inline-block h-[0.9rem] w-[0.9rem] bg-accent"></span>
+      <span id="header-status">checking session</span>
+    </p>
+  </header>
+
+  <!-- Wider than the test pages on purpose: the test console is an instrument
+       that reads best narrow, while this is a nine column table that would
+       otherwise scroll sideways on a desktop too. -->
+  <main
+    class="relative z-10 mx-auto flex w-full max-w-[128rem] flex-1 flex-col items-center gap-y-6 px-6 pb-6 text-center">
+    <h1>Administration</h1>
+    <p class="tagline">Every test this server recorded, plus the levers that remove them</p>
+
+    <!-- The gate comes first and stays first: nothing below is even fetched
+         until the session says we are logged in. -->
+    <section class="console console-page" id="gate">
+      <p class="section-head">
+        <span>session</span>
+        <span class="normal-case tracking-terminal" id="gate-state">checking</span>
+      </p>
+
+      <div class="login-wrap">
+        <div class="note is-busy" id="gate-note">
+          <span class="note-mark" aria-hidden="true"></span>
+          <p>
+            <span class="note-title" id="gate-note-title"></span>
+            <span class="note-text">Checking whether this browser already has a session.</span>
+          </p>
+        </div>
+
+        <form class="login-box" id="login-form" hidden>
+          <h2>admin password</h2>
+          <p class="login-hint">
+            This panel lists every test the server recorded, including the client IP. It is protected
+            by the password in the server configuration; the session cookie lasts until it expires.
+          </p>
+
+          <label class="field">
+            <span class="field-label">password</span>
+            <input type="password" id="password" name="password" autocomplete="current-password" required />
+          </label>
+
+          <div class="login-actions">
+            <button class="btn btn-accent" id="login-submit" type="submit">log in</button>
+          </div>
+
+          <div class="note is-error" id="login-error" role="alert" hidden>
+            <span class="note-mark" aria-hidden="true"></span>
+            <p>
+              <span class="note-title">login failed</span>
+              <span class="note-text" id="login-error-text"></span>
+            </p>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- Everything behind the session. -->
+    <section class="console console-page" id="panel" hidden>
+      <p class="section-head">
+        <span>overview</span>
+        <span class="normal-case tracking-terminal">all recorded tests, last 30 days plotted</span>
+      </p>
+
+      <div class="kpi-strip">
+        <div class="kpi">
+          <p class="kpi-label">tests</p>
+          <p class="kpi-value" id="kpi-total"></p>
+          <p class="kpi-unit">recorded</p>
+        </div>
+        <div class="kpi">
+          <p class="kpi-label">clients</p>
+          <p class="kpi-value" id="kpi-clients"></p>
+          <p class="kpi-unit">distinct</p>
+        </div>
+        <div class="kpi is-dl">
+          <p class="kpi-label">download avg</p>
+          <p class="kpi-value" id="kpi-dl-avg"></p>
+          <p class="kpi-unit">mbit/s</p>
+        </div>
+        <div class="kpi is-dl">
+          <p class="kpi-label">download max</p>
+          <p class="kpi-value" id="kpi-dl-max"></p>
+          <p class="kpi-unit">mbit/s</p>
+        </div>
+        <div class="kpi is-ul">
+          <p class="kpi-label">upload avg</p>
+          <p class="kpi-value" id="kpi-ul-avg"></p>
+          <p class="kpi-unit">mbit/s</p>
+        </div>
+        <div class="kpi is-ul">
+          <p class="kpi-label">upload max</p>
+          <p class="kpi-value" id="kpi-ul-max"></p>
+          <p class="kpi-unit">mbit/s</p>
+        </div>
+        <div class="kpi">
+          <p class="kpi-label">ping avg</p>
+          <p class="kpi-value" id="kpi-ping-avg"></p>
+          <p class="kpi-unit">ms</p>
+        </div>
+        <div class="kpi">
+          <p class="kpi-label">jitter avg</p>
+          <p class="kpi-value" id="kpi-jitter-avg"></p>
+          <p class="kpi-unit">ms</p>
+        </div>
+      </div>
+
+      <p class="section-head">
+        <span>daily volume &amp; average download</span>
+        <span class="normal-case tracking-terminal">x: day &nbsp; left y: tests &nbsp; right y: mbit/s</span>
+      </p>
+      <div class="chart-canvas-wrap">
+        <canvas class="chart-canvas" id="stats-chart"></canvas>
+      </div>
+      <p class="legend">
+        <span><i class="legend-swatch bg-muted/40"></i> tests per day</span>
+        <span><i class="legend-swatch bg-accent"></i> average download</span>
+        <span id="chart-readout"></span>
+      </p>
+
+      <form class="filters" id="filters">
+        <label class="filter-field">
+          <span class="field-label">search</span>
+          <input type="search" id="f-q" name="q" placeholder="ip, isp, ua, id" />
+        </label>
+
+        <label class="filter-field">
+          <span class="field-label">from</span>
+          <input type="date" id="f-from" name="from" />
+        </label>
+
+        <label class="filter-field">
+          <span class="field-label">to</span>
+          <input type="date" id="f-to" name="to" />
+        </label>
+
+        <label class="filter-field">
+          <span class="field-label">min download</span>
+          <input type="number" id="f-min-dl" name="min_dl" min="0" step="1" placeholder="mbit/s" />
+        </label>
+
+        <label class="filter-field">
+          <span class="field-label">min upload</span>
+          <input type="number" id="f-min-ul" name="min_ul" min="0" step="1" placeholder="mbit/s" />
+        </label>
+
+        <label class="filter-field">
+          <span class="field-label">order</span>
+          <select id="f-order" name="order">
+            <option value="newest">newest first</option>
+            <option value="oldest">oldest first</option>
+            <option value="dl">fastest download</option>
+            <option value="ul">fastest upload</option>
+          </select>
+        </label>
+
+        <label class="filter-field">
+          <span class="field-label">per page</span>
+          <select id="f-limit" name="limit">
+            <option value="25">25</option>
+            <option value="50" selected>50</option>
+            <option value="100">100</option>
+            <option value="200">200</option>
+          </select>
+        </label>
+
+        <div class="filter-field filter-actions">
+          <button class="btn btn-accent" id="apply" type="submit">apply</button>
+          <button class="btn" id="reset" type="button">reset</button>
+        </div>
+      </form>
+
+      <p class="section-head">
+        <span>results</span>
+        <span class="normal-case tracking-terminal" id="list-range">nothing loaded</span>
+      </p>
+
+      <div class="note is-busy" id="list-note" role="status">
+        <span class="note-mark" aria-hidden="true"></span>
+        <p>
+          <span class="note-title" id="list-note-title">idle</span>
+          <span class="note-text" id="list-note-text">Log in to load the recorded tests.</span>
+          <button class="btn btn-small" id="list-retry" type="button" hidden>retry</button>
+        </p>
+      </div>
+
+      <div class="records-frame" id="records-frame" hidden>
+        <table class="records">
+          <caption class="visually-hidden">
+            Recorded speed tests matching the current filters. Each row offers a full detail
+            snapshot and a delete action.
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">time</th>
+              <th scope="col">ip</th>
+              <th scope="col" class="num">download<span class="th-unit">mbit/s</span></th>
+              <th scope="col" class="num">upload<span class="th-unit">mbit/s</span></th>
+              <th scope="col" class="num">ping<span class="th-unit">ms</span></th>
+              <th scope="col" class="num">jitter<span class="th-unit">ms</span></th>
+              <th scope="col">isp</th>
+              <th scope="col">client</th>
+              <th scope="col">actions</th>
+            </tr>
+          </thead>
+          <tbody id="records-body"></tbody>
+        </table>
+      </div>
+
+      <div class="pager" id="pager" hidden>
+        <span id="pager-range"></span>
+        <div class="pager-actions">
+          <button class="btn btn-small" id="page-prev" type="button">newer</button>
+          <button class="btn btn-small" id="page-next" type="button">older</button>
+        </div>
+      </div>
+
+      <div class="note is-ready" id="action-note" role="status" hidden>
+        <span class="note-mark" aria-hidden="true"></span>
+        <p>
+          <span class="note-title"></span>
+          <span class="note-text"></span>
+        </p>
+      </div>
+
+      <section class="panel" id="detail" hidden aria-label="Record detail">
+        <div class="panel-head">
+          <span id="detail-title">record</span>
+          <button class="btn btn-small" id="detail-close" type="button">close</button>
+        </div>
+        <div class="panel-body">
+          <p class="sub-head">fields</p>
+          <dl class="params" id="detail-fields"></dl>
+          <p class="sub-head mt-6">parameters</p>
+          <dl class="params" id="detail-params"></dl>
+          <p class="sub-head mt-6">test log</p>
+          <pre class="log-view" id="detail-log"></pre>
+          <p class="field-hint" id="detail-note" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <section class="panel" id="maintenance" aria-label="Maintenance">
+        <div class="panel-head">
+          <span>maintenance</span>
+          <span class="normal-case tracking-terminal">irreversible</span>
+        </div>
+
+        <div class="maintenance-block">
+          <h3>Purge records older than a date</h3>
+          <p class="field-hint">
+            Removes every test recorded before the date, whatever the filters above say. The server
+            reports how many rows it deleted.
+          </p>
+          <label class="field">
+            <span class="field-label">cutoff date</span>
+            <input type="date" id="purge-before" />
+          </label>
+          <label class="field">
+            <span class="field-label">type the cutoff date to confirm</span>
+            <input type="text" id="purge-before-confirm" placeholder="YYYY-MM-DD" autocomplete="off" />
+          </label>
+          <div class="btn-row mt-6">
+            <button class="btn btn-bad" id="purge-before-run" type="button">purge older records</button>
+          </div>
+          <div class="note is-ready maintenance-note" id="purge-before-note" hidden>
+            <span class="note-mark" aria-hidden="true"></span>
+            <p>
+              <span class="note-title"></span>
+              <span class="note-text" id="purge-before-result"></span>
+            </p>
+          </div>
+        </div>
+
+        <div class="maintenance-block">
+          <h3>Purge every record</h3>
+          <p class="field-hint">
+            Empties the results table. <span id="purge-all-count">The number of records is unknown until the list loads.</span>
+          </p>
+          <label class="field">
+            <span class="field-label">type PURGE to confirm</span>
+            <input type="text" id="purge-all-confirm" placeholder="PURGE" autocomplete="off" />
+          </label>
+          <div class="btn-row mt-6">
+            <button class="btn btn-bad" id="purge-all-run" type="button">purge all records</button>
+          </div>
+          <div class="note is-ready maintenance-note" id="purge-all-note" hidden>
+            <span class="note-mark" aria-hidden="true"></span>
+            <p>
+              <span class="note-title"></span>
+              <span class="note-text" id="purge-all-result"></span>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <div class="status-bar">
+        <div class="status-cell">
+          <p class="status-label">session</p>
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <p class="text-[1.4rem]" id="session-readout">not logged in</p>
+            <button class="btn btn-small" id="logout" type="button">log out</button>
+          </div>
+        </div>
+        <div class="status-cell">
+          <p class="status-label">export</p>
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <p class="text-[1.4rem]">CSV of the rows matching the filters</p>
+            <a class="btn btn-small" id="export" href="admin_api.php?op=export">export csv</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="relative z-10 pb-10 pt-2 text-center">
+    <nav class="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-[1.25rem] tracking-terminal">
+      <a class="terminal-link" href="../">speed test</a>
+      <a class="terminal-link" href="../stability.html">stability test</a>
+      <a class="terminal-link" href="../my-results.html">my records</a>
+    </nav>
+  </footer>
+
+  <script type="text/javascript" src="../frontend/javascript/admin.js"></script>
+</body>
+
+</html>

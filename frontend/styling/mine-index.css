@@ -1,0 +1,61 @@
+/**
+ * The "my records" page.
+ *
+ * Same screen, glass and console as the test pages; the records furniture is
+ * shared with the admin panel through records.css. What is left here is only
+ * what this page alone needs. `tailwind.css` is imported last so a utility
+ * class in the markup always beats a component default above.
+ */
+
+@import url("screen.css");
+@import url("colors.css");
+@import url("fonts.css");
+@import url("main.css");
+@import url("crt.css");
+@import url("terminal.css");
+@import url("records.css");
+@import url("tailwind.css");
+
+/* Six columns of readings and a summary line. Narrower than the admin table,
+   and it still scrolls inside its frame on a phone. */
+table.records {
+  min-width: 62rem;
+}
+
+/* The one line parameter summary is the only cell that is allowed to be cut
+   short; everything else is a number. */
+.trunc-params {
+  max-width: 30rem;
+}
+
+/* Four summary cells read as a block as 2 x 2 on a phone, instead of three plus
+   a stray. Above the phone breakpoint the auto-fit grid already lays them out in
+   one row. */
+@media screen and (max-width: 800px) {
+  .kpi-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* The commands under the console: the same treatment as #optionalControls in
+   stability.css, so they read as page furniture rather than as part of the
+   instrument. */
+.record-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1.2rem 2.4rem;
+  font-size: 1.3rem;
+  color: var(--secondary-text-color);
+}
+
+/* Shown only while the "clear this browser's id" step is armed: the page has to
+   say what is about to become unreachable before it does it. Outside the
+   console frame it is the one block that draws its own box. */
+#clear-hint {
+  max-width: 68rem;
+  border: 1px solid var(--panel-border-color);
+  background-color: rgb(var(--crt-screen) / 40%);
+  text-align: left;
+}
