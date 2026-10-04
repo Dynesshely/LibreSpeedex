@@ -19,6 +19,10 @@ STALE_CSRF=1 node tests/pages/stub-server.js 18210   # then: node tests/pages/cs
 | `shot.js` | Loads both pages at a desktop and a phone width, photographs them, and fails loudly on page errors. |
 | `probe.js` | Measures what a screenshot only suggests: how wide each table wants to be, whether the frames scroll at each width, and what the section heads say. |
 | `csrf-probe.js` | Drives the `bad_csrf` path, where the page has to re-read the session and replay the request once. |
+| `no-id-probe.js` | With no client id in storage the page must not call the endpoint at all; this counts the requests it makes. |
+| `detail-probe.js` | Opens a record at 2× device scale to check the snapshot panel's type and alignment. |
+| `state-probe.js` | Walks the gate states (signed out, signed in, unauthorized) and records which one is on screen. |
+| `REPORT.md` | The record of the run: stub commands, screenshot index, layout metrics, the Tailwind utility audit, and what was assumed. |
 
 The stub is **not authoritative**. It mirrors `results/admin_api.php` and
 `results/mine.php`; when the two disagree, the PHP is right and the stub is the
