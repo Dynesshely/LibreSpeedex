@@ -57,8 +57,8 @@ The test can be accessed on port 80.
 
 Here's a list of additional environment variables available in this mode:
 
-* __`TITLE`__: Title of your speed test. Default value: `LibreSpeedex`
-* __`TAGLINE`__: Slogan shown below the heading on the frontend. Default value: `No Flash, No Java, No Websockets, No Bullsh*t`
+* __`TITLE`__: Title of your speed test. When set, it replaces both the page `<title>` and the heading above the tagline. Default: empty, which keeps the ones the page ships with
+* __`TAGLINE`__: Slogan shown below the heading on the frontend. Default value: `No Flash, No Java, No Websockets, No Bullsh*t`, which is what the page already contains
 * __`SERVER_LIST_URL`__: When set, the frontend loads its server list from this URL instead of the generated or mounted `server-list.json`. This is useful if you want the containerized frontend to consume a remote shared server list.
 * __`TELEMETRY`__: Whether to enable telemetry or not. If enabled, you maybe want your data to be persisted. See below. Default value: `false`
 * __`ENABLE_ID_OBFUSCATION`__: When set to true with telemetry enabled, test IDs are obfuscated, to avoid exposing the database internal sequential IDs. Default value: `false`

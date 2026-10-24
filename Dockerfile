@@ -40,7 +40,9 @@ COPY images/ /speedtest/images/
 COPY docker/entrypoint.sh /
 
 # Prepare default environment variables
-ENV TITLE=LibreSpeedex
+# Empty by default: the page already ships its own title and heading. Set it
+# to replace both (the entrypoint rewrites <title> and the <h1>).
+ENV TITLE=
 ENV TAGLINE="No Flash, No Java, No Websockets, No Bullsh*t"
 ENV MODE=standalone
 ENV PASSWORD=password
