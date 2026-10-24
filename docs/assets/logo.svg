@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 160" width="760" height="160" role="img" aria-label="LibreSpeedex">
+  <!--
+    The horizontal lockup: the mark, then the wordmark the pages show in their
+    header. The "S" carries the accent colour, exactly as it does on screen, so
+    the logo and the product describe themselves the same way.
+
+    Text is set in the same monospace stack the interface uses. A viewer without
+    a monospace face still gets the right words; only the rhythm changes.
+  -->
+
+  <svg x="0" y="20" width="120" height="120" viewBox="0 0 32 32">
+    <defs>
+      <linearGradient id="lockup-screen" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#14181d"/>
+        <stop offset="0.55" stop-color="#0b0d10"/>
+        <stop offset="1" stop-color="#07090b"/>
+      </linearGradient>
+      <radialGradient id="lockup-bloom" cx="0.5" cy="0.52" r="0.52">
+        <stop offset="0" stop-color="#6ba1f5" stop-opacity="0.22"/>
+        <stop offset="0.6" stop-color="#6ba1f5" stop-opacity="0.05"/>
+        <stop offset="1" stop-color="#6ba1f5" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <rect width="32" height="32" rx="7" fill="#08090b"/>
+    <rect width="32" height="32" rx="7" fill="url(#lockup-screen)"/>
+    <rect width="32" height="32" rx="7" fill="url(#lockup-bloom)"/>
+    <path d="M6 17.5A10 10 0 0 1 26 17.5" fill="none" stroke="#6ba1f5" stroke-width="2.4"/>
+    <path d="M10.6 17.5A5.4 5.4 0 0 1 21.4 17.5" fill="none" stroke="#5dd3c4" stroke-width="1.9"/>
+    <rect x="14.6" y="21.9" width="2.8" height="2.8" fill="#e8eaed"/>
+    <rect x="0.5" y="0.5" width="31" height="31" rx="6.6" fill="none" stroke="#ffffff" stroke-opacity="0.09"
+      stroke-width="1" vector-effect="non-scaling-stroke"/>
+  </svg>
+
+  <text x="150" y="106" fill="#e8eaed" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace"
+    font-size="72" letter-spacing="7">LIBRE<tspan fill="#6ba1f5">S</tspan>PEEDEX</text>
+</svg>

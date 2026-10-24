@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="512" height="512" role="img" aria-label="LibreSpeedex">
+  <!--
+    The mark is the interface, reduced to two strokes: the download gauge and the
+    upload gauge, nested so they read as one object, over the same near-black
+    screen the page uses. The block below them is the terminal cursor, which is
+    the one element on every page of this project.
+
+    Everything is on a 32 unit grid so it scales to a 16px favicon without
+    redrawing: the arcs keep their 2.6 unit weight, which is the thinnest that
+    still resolves at that size.
+  -->
+  <defs>
+    <linearGradient id="screen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#14181d"/>
+      <stop offset="0.55" stop-color="#0b0d10"/>
+      <stop offset="1" stop-color="#07090b"/>
+    </linearGradient>
+    <radialGradient id="bloom" cx="0.5" cy="0.52" r="0.52">
+      <stop offset="0" stop-color="#6ba1f5" stop-opacity="0.22"/>
+      <stop offset="0.6" stop-color="#6ba1f5" stop-opacity="0.05"/>
+      <stop offset="1" stop-color="#6ba1f5" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="32" height="32" rx="7" fill="#08090b"/>
+  <rect width="32" height="32" rx="7" fill="url(#screen)"/>
+  <rect width="32" height="32" rx="7" fill="url(#bloom)"/>
+
+  <!-- download: the outer gauge -->
+  <path d="M6 17.5A10 10 0 0 1 26 17.5" fill="none" stroke="#6ba1f5" stroke-width="2.4"/>
+  <!-- upload: the inner gauge, in the second data colour. The gap between the
+       two is deliberately wider than the page uses: below about 24px a tighter
+       pair of arcs merges into one filled half-disc. -->
+  <path d="M10.6 17.5A5.4 5.4 0 0 1 21.4 17.5" fill="none" stroke="#5dd3c4" stroke-width="1.9"/>
+  <!-- the cursor -->
+  <rect x="14.6" y="21.9" width="2.8" height="2.8" fill="#e8eaed"/>
+
+  <!-- A hairline so the icon keeps an edge on a dark page or a dark tab bar.
+       non-scaling-stroke keeps it one device pixel at every size, which is the
+       only way the same file can serve a 16px tab and a 512px store icon. -->
+  <rect x="0.5" y="0.5" width="31" height="31" rx="6.6" fill="none" stroke="#ffffff" stroke-opacity="0.09"
+    stroke-width="1" vector-effect="non-scaling-stroke"/>
+</svg>
