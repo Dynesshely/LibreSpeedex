@@ -50,8 +50,12 @@ CREATE TABLE speedtest_users (
     ul text,
     ping text,
     jitter text,
-    log text
+    log text,
+    client_id text,
+    params text
 );
+
+CREATE INDEX IF NOT EXISTS idx_speedtest_users_client_id ON speedtest_users (client_id);
 
 -- Commented out the following line because it assumes the user of the speedtest server, @bplower
 -- ALTER TABLE speedtest_users OWNER TO speedtest;

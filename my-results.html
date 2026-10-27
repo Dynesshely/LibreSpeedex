@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <meta name="description"
+    content="LibreSpeedex my records: the speed tests this browser ran, found again by an anonymous local id. No account, no login." />
+  <link rel="shortcut icon" href="frontend/images/favicon.svg" />
+  <meta name="theme-color" content="#0A0B0D" />
+  <!-- Stylesheet first: the page script reads the palette from it. -->
+  <link rel="stylesheet" type="text/css" href="frontend/styling/mine-index.css" />
+  <script type="text/javascript" src="frontend/javascript/crt-background.js"></script>
+  <title>LibreSpeedex - My records</title>
+</head>
+
+<body class="relative flex min-h-screen flex-col font-term text-ink antialiased">
+  <!-- CRT glass: scanlines, grain, vignette, refresh sweep (crt.css) -->
+  <div class="crt-overlay" aria-hidden="true"></div>
+  <!-- Pixelated terminal backdrop: grid activity + data streams -->
+  <canvas id="crt-pixels" class="crt-pixels" aria-hidden="true"></canvas>
+
+  <header class="relative z-10 flex items-center justify-between gap-4 px-6 py-6 sm:px-12">
+    <a class="wordmark" href="./" aria-label="LibreSpeedex">LIBRE<span>S</span>PEEDEX</a>
+    <p class="hidden items-center gap-3 text-[1.2rem] uppercase tracking-label text-muted sm:flex">
+      <span class="crt-led inline-block h-[0.9rem] w-[0.9rem] bg-accent"></span>
+      <span id="header-status">looking up local id</span>
+    </p>
+  </header>
+
+  <main
+    class="relative z-10 mx-auto flex w-full max-w-[96rem] flex-1 flex-col items-center gap-y-6 px-6 pb-6 text-center">
+    <h1>My records</h1>
+    <p class="tagline">Only the runs this browser made, found again by an anonymous local id</p>
+
+    <!-- The instrument frame, as on the test pages: summary strip, the records
+         themselves, the snapshot of the selected run, then the readouts. -->
+    <section class="console console-page">
+      <div class="kpi-strip">
+        <div class="kpi">
+          <p class="kpi-label">records</p>
+          <p class="kpi-value" id="kpi-total"></p>
+          <p class="kpi-unit">kept for this browser</p>
+        </div>
+        <div class="kpi is-dl">
+          <p class="kpi-label">best download</p>
+          <p class="kpi-value" id="kpi-dl"></p>
+          <p class="kpi-unit" id="kpi-dl-unit">mbit/s</p>
+        </div>
+        <div class="kpi is-ul">
+          <p class="kpi-label">best upload</p>
+          <p class="kpi-value" id="kpi-ul"></p>
+          <p class="kpi-unit" id="kpi-ul-unit">mbit/s</p>
+        </div>
+        <div class="kpi">
+          <p class="kpi-label">average ping</p>
+          <p class="kpi-value" id="kpi-ping"></p>
+          <p class="kpi-unit" id="kpi-ping-unit">ms</p>
+        </div>
+      </div>
+
+      <!-- One place for every "nothing to show" outcome: no id yet, no records,
+           the endpoint refused, the network is down. The indicator light carries
+           the state, the sentence explains it, and the actions appear only when
+           they make sense. -->
+      <div class="note is-busy" id="state" role="status">
+        <span class="note-mark" aria-hidden="true"></span>
+        <p>
+          <span class="note-title" id="state-title">reading local id</span>
+          <span id="state-text">Looking for a client id in this browser.</span>
+          <a class="terminal-link" id="state-link" href="./" hidden>run a test</a>
+          <button class="btn btn-small" id="state-retry" type="button" hidden>retry</button>
+        </p>
+      </div>
+
+      <p class="section-head" id="records-head" hidden>
+        <span>records</span>
+        <span class="normal-case tracking-terminal" id="records-range"></span>
+      </p>
+
+      <div class="records-frame" id="records-frame" hidden>
+        <table class="records">
+          <caption class="visually-hidden">
+            Speed tests recorded by this browser, newest first. Select a row to see the full
+            parameter snapshot of that run.
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">time</th>
+              <th scope="col" class="num">download<span class="th-unit">mbit/s</span></th>
+              <th scope="col" class="num">upload<span class="th-unit">mbit/s</span></th>
+              <th scope="col" class="num">ping<span class="th-unit">ms</span></th>
+              <th scope="col" class="num">jitter<span class="th-unit">ms</span></th>
+              <th scope="col">parameters</th>
+            </tr>
+          </thead>
+          <tbody id="records-body"></tbody>
+        </table>
+      </div>
+
+      <section class="panel" id="detail" hidden aria-label="Selected run">
+        <div class="panel-head">
+          <span id="detail-title">run</span>
+          <a class="terminal-link" id="detail-share" href="#" target="_blank" rel="noopener">share image</a>
+        </div>
+        <div class="panel-body">
+          <dl class="params" id="detail-params"></dl>
+          <p class="field-hint" id="detail-note" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <div class="pager" id="pager" hidden>
+        <span id="pager-range"></span>
+        <div class="pager-actions">
+          <button class="btn btn-small" id="load-more" type="button">load older</button>
+        </div>
+      </div>
+
+      <div class="status-bar">
+        <div class="status-cell">
+          <p class="status-label">client id</p>
+          <p id="client-id-readout" class="text-[1.4rem]">&mdash;</p>
+        </div>
+        <div class="status-cell">
+          <p class="status-label">scope</p>
+          <p class="text-[1.4rem]">this browser only, no account</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="record-actions">
+      <a class="terminal-link" href="./">run a new test</a>
+      <button class="btn" id="refresh" type="button">refresh</button>
+      <button class="btn btn-bad" id="clear-id" type="button">clear this browser's id</button>
+      <button class="btn" id="clear-cancel" type="button" hidden>cancel</button>
+    </div>
+
+    <div class="note" id="clear-hint" hidden>
+      <span class="note-mark" aria-hidden="true"></span>
+      <p>
+        <span class="note-title">This forgets the id, not the records.</span>
+        The runs stay on the server, but nothing in this browser can find them again, and no one
+        here can recover the link. Run a test afterwards to start a new set.
+      </p>
+    </div>
+  </main>
+
+  <footer class="relative z-10 pb-10 pt-2 text-center">
+    <nav class="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-[1.25rem] tracking-terminal">
+      <a class="terminal-link" href="./">speed test</a>
+      <a class="terminal-link" href="stability.html">stability test</a>
+    </nav>
+  </footer>
+
+  <script type="text/javascript" src="frontend/javascript/mine-results.js"></script>
+</body>
+
+</html>

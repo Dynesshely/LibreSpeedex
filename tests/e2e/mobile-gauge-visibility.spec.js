@@ -69,7 +69,7 @@ test.describe("Mobile gauge visibility", () => {
       });
     });
 
-    await page.goto("http://127.0.0.1:18184/index-modern.html");
+    await page.goto("http://127.0.0.1:18184/index.html");
 
     const startButton = modernStartButton(page);
     const downloadGauge = page.locator("#download-gauge");

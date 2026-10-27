@@ -33,3 +33,12 @@ $PostgreSql_username = 'USERNAME';
 $PostgreSql_password = 'PASSWORD';
 $PostgreSql_hostname = 'DB_HOSTNAME';
 $PostgreSql_databasename = 'DB_NAME';
+
+// Rate limit for telemetry writes, counted per anonymous client_id (0 disables the limit)
+$telemetry_rate_limit_writes_per_hour    = 60;
+// Rate limit for telemetry writes, counted per client IP address (0 disables the limit)
+$telemetry_rate_limit_writes_per_hour_ip = 240;
+// Delete test results older than this many days, 0 = keep forever
+$telemetry_retention_days                = 90;
+// Directory for rate limit counters, '' = <dir of $Sqlite_db_file>/cache
+$telemetry_cache_dir                     = '';

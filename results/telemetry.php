@@ -2,21 +2,45 @@
 
 require 'telemetry_settings.php';
 require_once 'telemetry_db.php';
+require_once 'telemetry_guard.php';
 require_once '../backend/getIP_util.php';
 
 $ip = getClientIp();
-$ispinfo = $_POST['ispinfo'];
-$extra = $_POST['extra'];
-$ua = $_SERVER['HTTP_USER_AGENT'];
+// The stored IP may be redacted below, but the rate limit must always use the
+// real client address: with $redact_ip_addresses every request would otherwise
+// share the "0.0.0.0" bucket.
+$clientIp = $ip;
+
+$ispinfo = isset($_POST['ispinfo']) ? (string) $_POST['ispinfo'] : '';
+$extra = isset($_POST['extra']) ? (string) $_POST['extra'] : '';
+$ua = isset($_SERVER['HTTP_USER_AGENT']) ? (string) $_SERVER['HTTP_USER_AGENT'] : '';
 $lang = '';
 if (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
-    $lang = $_SERVER['HTTP_ACCEPT_LANGUAGE'];
+    $lang = (string) $_SERVER['HTTP_ACCEPT_LANGUAGE'];
 }
-$dl = $_POST['dl'];
-$ul = $_POST['ul'];
-$ping = $_POST['ping'];
-$jitter = $_POST['jitter'];
-$log = $_POST['log'];
+$dl = isset($_POST['dl']) ? (string) $_POST['dl'] : '';
+$ul = isset($_POST['ul']) ? (string) $_POST['ul'] : '';
+$ping = isset($_POST['ping']) ? (string) $_POST['ping'] : '';
+$jitter = isset($_POST['jitter']) ? (string) $_POST['jitter'] : '';
+$log = isset($_POST['log']) ? (string) $_POST['log'] : '';
+
+// Anonymous browser client id: optional, and ignored when malformed.
+$clientId = isset($_POST['client_id']) ? $_POST['client_id'] : null;
+if (!telemetryIsValidClientId($clientId)) {
+    $clientId = null;
+} else {
+    $clientId = (string) $clientId;
+}
+
+// JSON snapshot of the measurement parameters: optional, must be a JSON object.
+$params = telemetryNormalizeParams(isset($_POST['params']) ? $_POST['params'] : null);
+
+// Clamp the payloads before they reach the database.
+$ispinfo = telemetryClampText($ispinfo, 8192);
+$extra = telemetryClampText($extra, 1024);
+$ua = telemetryClampText($ua, 512);
+$lang = telemetryClampText($lang, 128);
+$log = telemetryClampText($log, 32768);
 
 if (isset($redact_ip_addresses) && true === $redact_ip_addresses) {
     $ip = '0.0.0.0';
@@ -31,13 +55,38 @@ if (isset($redact_ip_addresses) && true === $redact_ip_addresses) {
     $log = preg_replace($hostname_regex, '"hostname":"REDACTED"', $log);
 }
 
+// Rate limits. The key carries the current UTC hour so that a key is only ever
+// used within one window; 0 (or a missing setting) disables the limit.
+$rateLimitPerClient = isset($telemetry_rate_limit_writes_per_hour) ? (int) $telemetry_rate_limit_writes_per_hour : 60;
+$rateLimitPerIp = isset($telemetry_rate_limit_writes_per_hour_ip) ? (int) $telemetry_rate_limit_writes_per_hour_ip : 240;
+$rateWindow = gmdate('Y-m-d-H');
+
+if (
+    null !== $clientId
+    && !telemetryRateLimit('telemetry:client:'.$clientId.':'.$rateWindow, $rateLimitPerClient, 3600)
+) {
+    http_response_code(429);
+    echo 'rate_limited';
+    exit;
+}
+
+if (!telemetryRateLimit('telemetry:ip:'.$clientIp.':'.$rateWindow, $rateLimitPerIp, 3600)) {
+    http_response_code(429);
+    echo 'rate_limited';
+    exit;
+}
+
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0, s-maxage=0');
 header('Cache-Control: post-check=0, pre-check=0', false);
 header('Pragma: no-cache');
 
-$id = insertSpeedtestUser($ip, $ispinfo, $extra, $ua, $lang, $dl, $ul, $ping, $jitter, $log);
+$id = insertSpeedtestUser($ip, $ispinfo, $extra, $ua, $lang, $dl, $ul, $ping, $jitter, $log, $clientId, $params);
 if (false === $id) {
     exit(1);
 }
+
+// Opportunistic retention: usually a no-op, actually sweeps ~1 in 50 calls.
+$retentionDays = isset($telemetry_retention_days) ? (int) $telemetry_retention_days : 0;
+telemetryRetentionSweep($retentionDays);
 
 echo 'id '.$id;

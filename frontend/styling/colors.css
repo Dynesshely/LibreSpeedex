@@ -1,36 +1,97 @@
+/**
+ * The single source of truth for the palette.
+ *
+ * Three rules, which is what keeps this from reading as a "theme":
+ *
+ *   1. Surfaces are neutral. The screen is near-black with no useful hue
+ *      (#0A0B0D), so colour only ever means "this is lit / this is measured".
+ *   2. Chrome is monochrome. Text, borders and panels use one grey ramp; the
+ *      accent appears on interaction (focus, hover, primary button) and on the
+ *      data itself - never as decoration spread over the page.
+ *   3. Exactly two data colours, both restrained: a blue for download and a
+ *      teal for upload. Amber is reserved for transient states (abort).
+ *
+ * Colours are stored as bare RGB triplets so they can be reused with any alpha:
+ * `rgb(var(--crt-accent) / 12%)`. Tailwind mirrors these in `tailwind.config.js`
+ * (`theme.extend.colors`), so utilities like `text-accent/60` and hand written
+ * CSS cannot drift apart.
+ *
+ * Contrast budget: the CRT glass in crt.css darkens every other scanline row,
+ * so text colours are chosen to clear WCAG AA on the *dark* rows, not on the
+ * average. muted is 6.4:1 raw / 5.3:1 on a dark row.
+ */
+
 :root {
-  --theme-green: #5cf9fd;
-  --theme-pink: #d63bc6;
+  /* Everything is laid out on a 4px grid (root font-size is 10px). */
+  --grid: 0.4rem;
 
-  --background-backup-color: #0e0720;
-  --background-overlay-color: rgb(41 26 70 / 71%);
+  /* ---- surfaces: neutral, no tint worth naming ---- */
+  --crt-screen: 10 11 13;
+  --crt-screen-deep: 5 6 7;
 
-  --primary-text-color: #ffffff;
-  --tagline-text-color: var(--theme-green);
-  --secondary-text-color: #898591;
-  --primary-text-disabled-color: #888888;
-  --secondary-text-disabled-color: #2e7d7f;
+  /* ---- one accent, used for interaction and for the download series ---- */
+  --crt-accent: 107 161 245; /* soft blue */
 
-  --button-text-color: #3e2f50;
-  --button-gradient-1-color-1: #f5f5f5;
-  --button-gradient-1-color-2: var(--theme-green);
-  --button-gradient-1-color-3: var(--theme-pink);
-  --button-shadow-color: #5cf9fd47;
-  --button-disabled-background-color: #a2a2a2;
+  /* ---- the second data colour, for the upload series ---- */
+  --crt-alt: 93 211 196; /* soft teal */
 
-  --server-selector-border-color: #625b6b;
-  --server-selector-hover-border-color: var(--theme-green);
-  --server-selector-background-color: #251b32;
-  --server-selector-hover-background-color: var(--server-selector-border-color);
+  /* ---- transient / interrupt states ---- */
+  --crt-warn: 229 181 103; /* soft amber */
 
-  --gauge-background-color: #3e2f50;
-  --gauge-progress-color: #726c7a;
-  --gauge-pointer-green: #e2fbfc;
-  --gauge-pointer-pink: #d091ca;
+  /* ---- a negative outcome (verdict "bad", dropped packets) ---- */
+  --crt-bad: 226 122 122; /* soft red */
 
-  --ping-and-jitter-primary-text-color: #f5f5f5;
-  --ping-and-jitter-secondary-text-color: #7b7b7b;
+  /* ---- the grey ramp ---- */
+  --crt-ink: 232 234 237; /* primary text */
+  --crt-muted: 141 148 158; /* labels, secondary text */
 
-  --popup-background-color: #251b32;
-  --popup-shadow-color: #000000;
+  /* Screen wash. Kept in sync with tailwind.config.js */
+  --background-backup-color: rgb(var(--crt-screen));
+  --background-overlay-color: rgb(var(--crt-screen) / 42%);
+
+  /* ---- semantic aliases used by the component stylesheets ---- */
+  --accent-color: rgb(var(--crt-accent));
+  --accent-alt-color: rgb(var(--crt-alt));
+  --warn-color: rgb(var(--crt-warn));
+  --bad-color: rgb(var(--crt-bad));
+
+  --primary-text-color: rgb(var(--crt-ink));
+  --tagline-text-color: rgb(var(--crt-muted));
+  --secondary-text-color: rgb(var(--crt-muted));
+  --primary-text-disabled-color: rgb(var(--crt-muted) / 55%);
+  --secondary-text-disabled-color: rgb(var(--crt-muted) / 45%);
+
+  /* Buttons: the resting look lives in Tailwind classes in the markup, so only
+     the values CSS still owns are kept here. */
+  --button-ghost-color: rgb(var(--crt-accent) / 8%);
+  --button-border-color: rgb(var(--crt-accent) / 35%);
+
+  /* Panels (console, status strip) */
+  --panel-background-color: rgb(var(--crt-screen) / 60%);
+  --panel-border-color: rgb(255 255 255 / 9%);
+  --panel-hover-border-color: rgb(var(--crt-accent) / 55%);
+  --panel-hover-background-color: rgb(var(--crt-accent) / 7%);
+
+  --server-selector-border-color: var(--panel-border-color);
+  --server-selector-hover-border-color: var(--panel-hover-border-color);
+  --server-selector-background-color: rgb(var(--crt-screen-deep) / 97%);
+  --server-selector-hover-background-color: var(--panel-hover-background-color);
+
+  /* Gauges: the arc is the measurement, the track is barely lit */
+  --gauge-background-color: rgb(255 255 255 / 13%);
+  --gauge-pointer-download: rgb(var(--crt-accent));
+  --gauge-pointer-upload: rgb(var(--crt-alt));
+  --gauge-download-color: rgb(var(--crt-accent));
+  --gauge-upload-color: rgb(var(--crt-alt));
+
+  /* The glow behind each gauge while it runs. Its strength is driven by the
+     live speed: see --gauge-glow in results.css. */
+  --gauge-bloom-download: rgb(var(--crt-accent) / 16%);
+  --gauge-bloom-upload: rgb(var(--crt-alt) / 14%);
+
+  --readout-primary-text-color: rgb(var(--crt-ink));
+  --readout-secondary-text-color: rgb(var(--crt-muted));
+
+  /* Dialogs */
+  --popup-background-color: rgb(var(--crt-screen));
 }

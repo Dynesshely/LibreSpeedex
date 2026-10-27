@@ -1,19 +1,280 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <link rel="shortcut icon" href="favicon.ico">
-    <link rel="manifest" href="manifest.webmanifest">
-    <link rel="apple-touch-icon" href="images/icon-192.png">
-    <meta name="theme-color" content="#000000">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no" />
-    <meta charset="UTF-8" />
-    <script type="text/javascript" src="design-switch.js"></script>
-    <title>LibreSpeed</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <meta name="description"
+    content="Free and Open Source Speedtest. Run it right now in your browser, or self-host on a PHP, Golang, Rust or Node server. License: LGPL." />
+  <link rel="shortcut icon" href="frontend/images/favicon.svg" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="images/icon-192.png" />
+  <meta name="theme-color" content="#0A0B0D" />
+  <!-- Stylesheet first: the scripts below read CSS custom properties when they
+       initialise, so the palette has to be live before they run. -->
+  <link rel="stylesheet" type="text/css" href="frontend/styling/index.css" />
+  <script type="text/javascript" src="speedtest.js"></script>
+  <script type="text/javascript">
+    // Set this to a different URL to load the server list from another location.
+    var SPEEDTEST_SERVERS = "server-list.json";
+  </script>
+  <script type="text/javascript" src="frontend/javascript/crt-background.js"></script>
+  <script type="text/javascript" src="frontend/javascript/realtime-chart.js"></script>
+  <script type="text/javascript" src="frontend/javascript/test-params.js"></script>
+  <script type="text/javascript" src="frontend/javascript/index.js"></script>
+  <title>LibreSpeedex</title>
 </head>
 
-<body>
-    <p>Loading...</p>
+<body class="relative flex min-h-screen flex-col font-term text-ink antialiased">
+  <!-- CRT glass: scanlines, shadow mask, vignette, refresh sweep (crt.css) -->
+  <div class="crt-overlay" aria-hidden="true"></div>
+  <!-- Pixelated terminal backdrop: grid activity + data streams (crt-background.js) -->
+  <canvas id="crt-pixels" class="crt-pixels" aria-hidden="true"></canvas>
+
+  <header class="relative z-10 flex items-center justify-between gap-4 px-6 py-6 sm:px-12">
+    <a class="wordmark" href="./" aria-label="LibreSpeedex">LIBRE<span>S</span>PEEDEX</a>
+    <p class="hidden items-center gap-3 text-[1.2rem] uppercase tracking-label text-muted sm:flex">
+      <span class="crt-led inline-block h-[0.9rem] w-[0.9rem] bg-accent"></span>
+      <span id="header-status">terminal ready</span>
+    </p>
+  </header>
+
+  <main
+    class="relative z-10 mx-auto flex w-full max-w-[96rem] flex-1 flex-col items-center justify-center gap-y-6 px-6 pb-6 text-center">
+    <!-- The two nodes below are deliberately free of utility classes:
+         docker/entrypoint.sh rewrites them from $TITLE / $TAGLINE. -->
+    <h1>Free and Open Source Speedtest.</h1>
+    <p class="tagline">No Flash, No Java, No Websockets, No Bullsh*t</p>
+
+    <button id="start-button" class="disabled border border-accent/40 bg-accent/[0.07] px-12 py-4 text-[1.6rem]
+        tracking-terminal text-accent transition-all duration-200
+        hover:border-accent hover:bg-accent/[0.15]
+        focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent/70">
+    </button>
+
+    <!-- The instrument: gauges over the plot, inside one frame, so the console
+         reads as a single object and owns the slack on tall viewports. -->
+    <section class="console">
+      <div class="gauge-layout">
+        <div class="gauge download" id="download-gauge">
+          <div class="progress"></div>
+          <div class="speed"></div>
+          <h1><span id="download-speed">00</span> <span data-unit>Mbps</span></h1>
+          <h2>Download</h2>
+        </div>
+
+        <div class="gauge upload" id="upload-gauge">
+          <div class="progress"></div>
+          <div class="speed"></div>
+          <h1><span id="upload-speed">00</span> <span data-unit>Mbps</span></h1>
+          <h2>Upload</h2>
+        </div>
+
+        <!-- Ping sits under the download gauge, jitter under the upload gauge.
+             Both are filled in during the test and start out hidden. -->
+        <div class="ping hidden">
+          <span class="label">Ping</span>:&nbsp;
+          <span class="value" id="ping">00</span>ms
+        </div>
+
+        <div class="jitter hidden">
+          <span class="label">Jitter</span>:&nbsp;
+          <span class="value" id="jitter">00</span>ms
+        </div>
+      </div>
+
+      <section id="chart-panel" class="w-full p-4 text-left sm:p-5">
+        <header
+          class="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-accent/15 pb-2 text-[1.15rem] uppercase tracking-label">
+          <span class="text-muted">realtime throughput</span>
+          <span id="chart-readout" class="text-accent/80">standby</span>
+        </header>
+
+        <!-- The plot takes whatever the frame has left, but has a floor so it is
+             still readable when the status strip below it grows. -->
+        <div class="relative min-h-[12rem] flex-1">
+          <canvas id="realtime-chart" class="absolute inset-0 h-full w-full"></canvas>
+        </div>
+
+        <p class="mt-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-[1.1rem] uppercase tracking-label text-muted">
+          <span class="inline-flex items-center gap-2">
+            <i class="legend-swatch bg-accent"></i> download
+            <b class="legend-peak" id="peak-download">&nbsp;</b>
+          </span>
+          <span class="inline-flex items-center gap-2">
+            <i class="legend-swatch bg-alt"></i> upload
+            <b class="legend-peak" id="peak-upload">&nbsp;</b>
+          </span>
+          <span class="ml-auto normal-case tracking-label">x: elapsed&nbsp;&nbsp;y: <span data-unit-legend>mbit/s</span></span>
+        </p>
+      </section>
+
+      <!-- Readouts live inside the instrument frame, under the plot: which host
+           we are testing against, and where the client sits. -->
+      <div class="status-bar">
+        <div class="status-cell">
+          <p class="status-label">server</p>
+          <div class="server-selector">
+            <div class="chosen">
+              <div class="chevron">
+                <img src="frontend/images/chevron.svg" alt="select..." />
+              </div>
+              <h2 id="selected-server">searching nearest server...</h2>
+            </div>
+            <ul class="servers"></ul>
+            <p class="sponsor" id="sponsor">&nbsp;</p>
+          </div>
+
+          <!-- The node name above is a label someone chose; the endpoint below
+               is the address the traffic actually goes to, which is the thing
+               the numbers have to be read against. -->
+          <p class="server-endpoint">
+            <span class="status-label">endpoint</span>
+            <span id="server-address">—</span>
+            <button type="button" id="server-detail-toggle" class="server-detail-toggle" aria-expanded="false"
+              aria-controls="server-detail">[?]</button>
+          </p>
+          <dl id="server-detail" class="server-detail" hidden>
+            <dt>interface</dt>
+            <dd id="server-interface">—</dd>
+            <dt>public</dt>
+            <dd id="server-public">—</dd>
+            <dt>protocol</dt>
+            <dd id="server-proto">—</dd>
+          </dl>
+          <p id="server-note" class="server-note" role="status"></p>
+        </div>
+
+        <div class="status-cell">
+          <p class="status-label">client</p>
+          <p id="privacy-warning">&mdash;</p>
+          <p id="privacy-notice" class="hidden">
+            <a href="#" id="choose-privacy">privacy options</a>
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- The measurement dials. Collapsed: the screen is the instrument, this is
+         the bench behind it. -->
+    <section id="params-panel" class="params-panel">
+      <button type="button" id="params-toggle" class="params-summary" aria-expanded="false" aria-controls="params-body">
+        <span class="status-label" id="params-heading">measurement parameters</span>
+        <span id="params-readout" class="params-readout">&mdash;</span>
+        <span class="params-action">[ change ]</span>
+      </button>
+
+      <div id="params-body" class="params-body" hidden aria-labelledby="params-heading">
+        <div id="params-presets" class="params-presets" role="group" aria-label="Parameter presets"></div>
+        <div id="params-basic" class="params-grid"></div>
+
+        <details class="params-advanced">
+          <summary>advanced</summary>
+          <div id="params-advanced" class="params-grid"></div>
+        </details>
+
+        <p id="params-note" class="params-note" role="status"></p>
+        <div class="params-actions">
+          <button type="button" id="params-reset" class="params-button">reset</button>
+          <button type="button" id="params-share" class="params-button">copy link</button>
+        </div>
+      </div>
+    </section>
+
+    <button id="share-results" class="hidden border border-accent/40 bg-transparent px-8 py-2.5 text-[1.4rem]
+        tracking-terminal text-accent transition-colors hover:bg-accent/10">
+      Share results
+    </button>
+  </main>
+
+  <footer class="relative z-10 pb-10 pt-2 text-center">
+    <nav class="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-[1.25rem] tracking-terminal">
+      <!-- Revealed once telemetry is known to be on: a records page on a server
+           that stores nothing is a dead end. -->
+      <a class="terminal-link hidden" id="my-results-link" href="my-results.html">my records</a>
+      <a class="terminal-link" href="stability.html">stability test</a>
+      <a class="terminal-link" href="https://github.com/librespeed/speedtest">source code</a>
+    </nav>
+  </footer>
+
+  <dialog id="share">
+    <div class="close-dialog">
+      <img src="frontend/images/close-button.svg" alt="Close" />
+    </div>
+    <img id="results" src="" alt="Test results in graphical form" />
+    <button id="copy-link">Copy link</button>
+  </dialog>
+
+  <dialog id="privacy">
+    <div class="close-dialog">
+      <img src="frontend/images/close-button.svg" alt="Close" />
+    </div>
+    <section>
+      <h1>Privacy Policy</h1>
+      <p>
+        This HTML5 speed test server is configured with telemetry enabled.
+      </p>
+
+      <h2>What data we collect</h2>
+      <p>
+        At the end of the test, the following data is collected and stored:
+      </p>
+
+      <ul>
+        <li>Test ID</li>
+        <li>Time of testing</li>
+        <li>Test results (download and upload speed, ping and jitter)</li>
+        <li>The measurement parameters your test ran with</li>
+        <li>IP address</li>
+        <li>ISP information</li>
+        <li>Approximate location (inferred from IP address, not GPS)</li>
+        <li>User agent and browser locale</li>
+        <li>Test log (contains no personal information)</li>
+        <li>
+          An anonymous browser ID: a random value this browser generates and
+          keeps locally. It is not derived from you or your device, and it is
+          only used so this browser can list the tests it ran.
+        </li>
+      </ul>
+
+      <h2>How we use the data</h2>
+      <p>Data collected through this service is used to:</p>
+
+      <ul>
+        <li>
+          Allow sharing of test results (sharable image for forums, etc.)
+        </li>
+        <li>
+          To improve the service offered to you (for instance, to detect
+          problems on our side)
+        </li>
+      </ul>
+
+      <p>No personal information is disclosed to third parties.</p>
+
+      <h2>Your consent</h2>
+      <p>
+        By starting the test, you consent to the terms of this privacy policy.
+      </p>
+
+      <h2>Data removal</h2>
+      <p>
+        If you want to have your information deleted, you need to provide
+        either the ID of the test or your IP address. This is the only way to
+        identify your data, without this information we won't be able to
+        comply with your request.
+      </p>
+      <p>
+        You can also keep a test out of the database in the first place: open
+        the measurement parameters and switch "save this result" off.
+      </p>
+      <p>
+        Contact this email address for all deletion requests:
+        <a href="mailto:PUT@YOUR_EMAIL.HERE">TO BE FILLED BY DEVELOPER</a>.
+      </p>
+    </section>
+    <button id="close-privacy">Close</button>
+  </dialog>
 </body>
 
 </html>

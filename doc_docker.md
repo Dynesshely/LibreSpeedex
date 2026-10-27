@@ -32,7 +32,7 @@ services:
     restart: always
     environment:
       MODE: standalone
-      #TITLE: "LibreSpeed"
+      #TITLE: "LibreSpeedex"
       #TAGLINE: "No Flash, No Java, No Websockets, No Bullsh*t"
       #TELEMETRY: "false"
       #ENABLE_ID_OBFUSCATION: "false"
@@ -57,10 +57,9 @@ The test can be accessed on port 80.
 
 Here's a list of additional environment variables available in this mode:
 
-* __`TITLE`__: Title of your speed test. Default value: `LibreSpeed`
-* __`TAGLINE`__: Slogan shown below the heading on the modern frontend (`index-modern.html`). Default value: `No Flash, No Java, No Websockets, No Bullsh*t`
-* __`USE_NEW_DESIGN`__: When set to `true`, enables the new modern frontend design. When set to `false` (default), uses the classic design. The design can also be switched using URL parameters (`?design=new` or `?design=old`). Default value: `false`
-* __`SERVER_LIST_URL`__: When set, both frontend designs load their server list from this URL instead of the generated or mounted `server-list.json`. This is useful if you want the containerized frontend to consume a remote shared server list.
+* __`TITLE`__: Title of your speed test. When set, it replaces both the page `<title>` and the heading above the tagline. Default: empty, which keeps the ones the page ships with
+* __`TAGLINE`__: Slogan shown below the heading on the frontend. Default value: `No Flash, No Java, No Websockets, No Bullsh*t`, which is what the page already contains
+* __`SERVER_LIST_URL`__: When set, the frontend loads its server list from this URL instead of the generated or mounted `server-list.json`. This is useful if you want the containerized frontend to consume a remote shared server list.
 * __`TELEMETRY`__: Whether to enable telemetry or not. If enabled, you maybe want your data to be persisted. See below. Default value: `false`
 * __`ENABLE_ID_OBFUSCATION`__: When set to true with telemetry enabled, test IDs are obfuscated, to avoid exposing the database internal sequential IDs. Default value: `false`
 * __`OBFUSCATION_SALT`__: The salt string that is used to obfuscate the test IDs. The format should be a 2 byte hex string (e.g. `0x1234abcd`). If not specified, a random one will be generated.
@@ -79,8 +78,18 @@ Here's a list of additional environment variables available in this mode:
 * __`IPINFO_APIKEY`__: API key for [ipinfo.io](https://ipinfo.io). Optional, but required if you want to use the full [ipinfo.io](https://ipinfo.io) APIs (required for distance measurement)
 * __`DISTANCE`__: When `DISABLE_IPINFO` is set to false, this specifies how the distance from the server is measured. Can be either `km` for kilometers, `mi` for miles, or an empty string to disable distance measurement. Requires an [ipinfo.io](https://ipinfo.io) API key. Default value: `km`
 * __`WEBPORT`__: Allows choosing a custom port for the included web server. Default value: `8080`. Note that you will have to expose it through docker with the -p argument. This is not the port where the service is exposed outside docker!
+* __`SERVER_NODE_NAME`__: Label for the test node, shown above the endpoint address on the test page. Default value: `local`
+* __`TRUSTED_PROXIES`__: Comma separated list of addresses or CIDR blocks whose forwarding headers (`X-Forwarded-For`, `X-Real-IP`, `Client-IP`, `CF-Connecting-IP`) are believed. Requests from anywhere else have their forwarding headers ignored and their socket peer address used instead, which is the only value a client cannot forge. Set this when the container sits behind a reverse proxy, e.g. `-e TRUSTED_PROXIES=172.16.0.0/12`. Default: only the addresses in `backend/backend_settings.php` (loopback).
+* __`GARBAGE_MAX_CHUNK_MB`__: Largest download a single stream may request, in megabytes. The client asks for a chunk count, the server decides. Default value: `256`
+* __`GARBAGE_MAX_CONCURRENT`__: Concurrent download streams the server will serve across all visitors. Further requests get `503` for a couple of seconds. `0` disables the limiter. Default value: `64`
+* __`GARBAGE_MAX_CONCURRENT_PER_IP`__: The same ceiling, per client address. `0` disables it. Default value: `16`
+* __`SERVER_INFO_EXPOSE_INTERFACE`__: Whether the server may report the interface address it was reached on. Behind Docker that is the container's private address, useful on a LAN and worth hiding on a public deployment. Default value: `true`
+* __`SERVER_INFO_PUBLIC_IP`__: Whether the server may look up its own public egress address, cached for `SERVER_INFO_PUBLIC_IP_TTL` seconds. The lookup leaves the machine. Default value: `true`
+* __`TELEMETRY_RETENTION_DAYS`__: Records older than this are swept during telemetry writes. `0` keeps them forever. Default value: `90`
+* __`TELEMETRY_RATE_LIMIT`__: Stored results allowed per anonymous browser id per hour. Default value: `60`
+* __`TELEMETRY_RATE_LIMIT_IP`__: Stored results allowed per client address per hour. Default value: `240`
 
-If telemetry is enabled, a stats page will be available at `http://your.server/results/stats.php`, but a password must be specified.
+If telemetry is enabled, the admin panel is available at `http://your.server/results/admin.html` (the older `results/stats.php` is still there and still works), and each browser can review its own tests at `http://your.server/my-results.html`. Both need `PASSWORD`; until it is set to something other than the `password` placeholder, the admin API refuses every request.
 
 ### Persist sqlite database
 

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>LibreSpeedex poster</title>
+  <!--
+    The source of docs/assets/poster.png.
+
+    It imports the real palette and screen rather than restating them, so the
+    poster cannot drift from the product: change colors.css and this follows.
+    Render with:
+
+      node docs/assets/render-poster.js      (see the note in that file)
+  -->
+  <link rel="stylesheet" href="../../frontend/styling/colors.css" />
+  <link rel="stylesheet" href="../../frontend/styling/screen.css" />
+  <style>
+    :root {
+      --poster-w: 1600px;
+      --poster-h: 720px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "DejaVu Sans Mono", monospace;
+    }
+
+    html,
+    body {
+      width: var(--poster-w);
+      height: var(--poster-h);
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    body {
+      position: relative;
+      display: flex;
+      /* screen.css makes body a column; the poster centres its frame instead. */
+      flex-direction: row;
+      align-items: center;
+      font-family: var(--mono);
+      background-color: rgb(var(--crt-screen));
+      /* The page's own wash, at the same strength: a soft lift behind the
+         heading, a teal bleed bottom-left, and the display's dot matrix. */
+      background-image: radial-gradient(110% 70% at 50% -8%, rgb(var(--crt-accent) / 13%), transparent 62%),
+        radial-gradient(110% 40% at 50% 118%, rgb(var(--crt-accent) / 11%), transparent 68%),
+        radial-gradient(70% 60% at 2% 100%, rgb(var(--crt-alt) / 6%), transparent 64%),
+        radial-gradient(rgb(var(--crt-accent) / 6%) 1px, transparent 1.4px);
+      background-repeat: no-repeat, no-repeat, no-repeat, repeat;
+      background-size: auto, auto, auto, 3px 3px;
+    }
+
+    /* The glass: one scanline pair every 3px, and a vignette that pulls the
+       corners down so the centre reads first. */
+    .glass {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image: repeating-linear-gradient(to bottom,
+          rgb(0 0 0 / 26%) 0,
+          rgb(0 0 0 / 26%) 1px,
+          transparent 1px,
+          transparent 3px);
+      mix-blend-mode: multiply;
+    }
+
+    .vignette {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(120% 90% at 42% 42%, transparent 40%, rgb(0 0 0 / 55%) 100%);
+    }
+
+    .frame {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      padding: 0 96px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.32fr) minmax(0, 1fr);
+      align-items: center;
+      gap: 40px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      font-size: 26px;
+      letter-spacing: 0.18em;
+      color: rgb(var(--crt-ink));
+    }
+
+    .brand img {
+      width: 46px;
+      height: 46px;
+      display: block;
+    }
+
+    .brand b {
+      font-weight: 400;
+      color: rgb(var(--crt-accent));
+    }
+
+    h1 {
+      margin: 44px 0 0;
+      font-size: 58px;
+      font-weight: 400;
+      line-height: 1.08;
+      letter-spacing: 0.01em;
+      color: rgb(var(--crt-ink));
+    }
+
+    h1 em {
+      font-style: normal;
+      color: rgb(var(--crt-accent));
+    }
+
+    .lede {
+      margin: 30px 0 0;
+      max-width: 46ch;
+      font-size: 24px;
+      line-height: 1.55;
+      color: rgb(var(--crt-muted));
+    }
+
+    .lede b {
+      font-weight: 400;
+      color: rgb(var(--crt-alt));
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 40px 0 0;
+    }
+
+    .chip {
+      padding: 7px 14px;
+      border: 1px solid rgb(255 255 255 / 12%);
+      font-size: 18px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgb(var(--crt-muted));
+    }
+
+    .repo {
+      margin: 34px 0 0;
+      font-size: 20px;
+      letter-spacing: 0.02em;
+      color: rgb(var(--crt-muted) / 80%);
+    }
+
+    .repo s {
+      text-decoration: none;
+      color: rgb(var(--crt-accent));
+    }
+
+    /* The mark, large, with its own bloom. It is the same file the site uses as
+       a favicon, so the poster shows the actual asset rather than a redrawing. */
+    .mark-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mark-wrap::before {
+      content: "";
+      position: absolute;
+      width: 520px;
+      height: 340px;
+      background: radial-gradient(closest-side, rgb(var(--crt-accent) / 16%), transparent 72%);
+      filter: blur(8px);
+    }
+
+    .mark-wrap img {
+      position: relative;
+      width: 340px;
+      height: 340px;
+      display: block;
+    }
+
+    /* Corner labels, the one typographic joke the interface makes. */
+    .corner {
+      position: absolute;
+      z-index: 3;
+      font-size: 16px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgb(var(--crt-muted) / 55%);
+    }
+
+    .corner.br {
+      right: 96px;
+      bottom: 34px;
+      text-align: right;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="glass"></div>
+  <div class="vignette"></div>
+  <p class="corner br">lgpl-3.0-or-later &nbsp;/&nbsp; php + apache</p>
+
+  <div class="frame">
+    <div>
+      <div class="brand"><img src="mark.svg" alt="" />LIBRE<b>S</b>PEEDEX</div>
+      <h1>Your link, measured<br />on a <em>phosphor screen.</em></h1>
+      <p class="lede">
+        Download, upload, ping and jitter, measured in the browser and
+        <b>drawn while the link is busy</b>. Self-hosted, one container,
+        no external services.
+      </p>
+      <div class="chips">
+        <span class="chip">no framework</span>
+        <span class="chip">no runtime deps</span>
+        <span class="chip">records + admin</span>
+      </div>
+      <p class="repo">github.com/<s>Dynesshely/LibreSpeedex</s></p>
+    </div>
+
+    <div class="mark-wrap"><img src="mark.svg" alt="" /></div>
+  </div>
+</body>
+
+</html>

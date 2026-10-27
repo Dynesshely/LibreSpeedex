@@ -2,7 +2,6 @@
 
 echo "Setting up docker env..."
 echo "MODE: $MODE"
-echo "USE_NEW_DESIGN: $USE_NEW_DESIGN"
 echo "SERVER_LIST_URL: $SERVER_LIST_URL"
 echo "WEBPORT: $WEBPORT"
 echo "REDACT_IP_ADDRESSES: $REDACT_IP_ADDRESSES"
@@ -36,10 +35,9 @@ rm -rf /var/www/html/*
 # Copy frontend files
 cp /speedtest/*.js /var/www/html/
 cp /speedtest/stability.html /var/www/html/
-
-# Copy design switch files
-cp /speedtest/config.json /var/www/html/
-cp /speedtest/design-switch.js /var/www/html/
+# The records page only has anything to show when telemetry is on, but the file
+# is harmless without it and the UI hides the link itself.
+cp /speedtest/my-results.html /var/www/html/ 2>/dev/null || true
 
 # Copy PWA metadata and icons
 cp /speedtest/favicon.ico /var/www/html/
@@ -75,12 +73,44 @@ if [ "$MODE" == "backend" ]; then
   fi
 fi
 
+# Backend policy from the environment. Appended rather than substituted: the
+# trusted proxy list is an array, and a trailing assignment is the one form that
+# cannot be broken by the value it carries.
+if [ -f /var/www/html/backend/backend_settings.php ]; then
+  {
+    echo ""
+    echo "// ---- rewritten from the container environment at startup ----"
+    if [ -n "$TRUSTED_PROXIES" ]; then
+      echo "\$trusted_proxies = explode(',', '$TRUSTED_PROXIES');"
+    fi
+    if [[ "$GARBAGE_MAX_CHUNK_MB" =~ ^[0-9]+$ ]]; then
+      echo "\$garbage_max_chunk_mb = $GARBAGE_MAX_CHUNK_MB;"
+    fi
+    if [[ "$GARBAGE_MAX_CONCURRENT" =~ ^[0-9]+$ ]]; then
+      echo "\$garbage_max_concurrent = $GARBAGE_MAX_CONCURRENT;"
+    fi
+    if [[ "$GARBAGE_MAX_CONCURRENT_PER_IP" =~ ^[0-9]+$ ]]; then
+      echo "\$garbage_max_concurrent_per_ip = $GARBAGE_MAX_CONCURRENT_PER_IP;"
+    fi
+    if [ "$SERVER_INFO_EXPOSE_INTERFACE" == "false" ]; then
+      echo "\$server_info_expose_interface = false;"
+    fi
+    if [ "$SERVER_INFO_PUBLIC_IP" == "false" ]; then
+      echo "\$server_info_public_ip = false;"
+    fi
+    if [[ "$SERVER_INFO_PUBLIC_IP_TTL" =~ ^[0-9]+$ ]]; then
+      echo "\$server_info_public_ip_ttl = $SERVER_INFO_PUBLIC_IP_TTL;"
+    fi
+    if [ -n "$SERVER_INFO_PUBLIC_IP_URL" ]; then
+      echo "\$server_info_public_ip_url = '$SERVER_INFO_PUBLIC_IP_URL';"
+    fi
+  } >> /var/www/html/backend/backend_settings.php
+fi
+
 # Set up index.php for frontend-only or standalone modes
 if [[ "$MODE" == "frontend" || "$MODE" == "dual" ||  "$MODE" == "standalone" ]]; then
-  # Copy design files (switcher + both designs)
+  # Copy the page. There is a single design now: the Terminal/CRT frontend.
   cp /speedtest/index.html /var/www/html/
-  cp /speedtest/index-classic.html /var/www/html/
-  cp /speedtest/index-modern.html /var/www/html/
   cp /speedtest/stability.html /var/www/html/
   # Keep the frontend assets under frontend/, which is where the HTML looks for
   # them and where they sit in the repository
@@ -98,14 +128,16 @@ if [[ "$MODE" == "frontend" || "$MODE" == "dual" ||  "$MODE" == "standalone" ]];
     exit 1
   else
     echo "no /servers.json found, create one for local host"
-    # generate config for just the local server
-    echo '[{"name":"local","server":"/backend",  "dlURL": "garbage.php", "ulURL": "empty.php", "pingURL": "empty.php", "getIpURL": "getIP.php", "sponsorName": "", "sponsorURL": "", "id":1 }]' > /var/www/html/server-list.json
+    # generate config for just the local server. The name is the node label the
+    # panel shows above the endpoint address; "local" is only the fallback.
+    NODE_NAME=${SERVER_NODE_NAME:-local}
+    NODE_NAME_JSON=$(printf '%s' "$NODE_NAME" | sed 's/\\/\\\\/g; s/"/\\"/g')
+    printf '%s' '[{"name":"'"$NODE_NAME_JSON"'","server":"/backend",  "dlURL": "garbage.php", "ulURL": "empty.php", "pingURL": "empty.php", "getIpURL": "getIP.php", "sponsorName": "", "sponsorURL": "", "id":1 }]' > /var/www/html/server-list.json
   fi
   if [ ! -z "$SERVER_LIST_URL" ]; then
     echo "using SERVER_LIST_URL for frontend server list"
     SERVER_LIST_URL_ESCAPED=$(printf '%s\n' "$SERVER_LIST_URL" | sed 's/[&/\\]/\\&/g; s/\$/\\$/g')
-    sed -i "s/var SPEEDTEST_SERVERS = \"server-list.json\";/var SPEEDTEST_SERVERS = \"$SERVER_LIST_URL_ESCAPED\";/" /var/www/html/index-modern.html
-    sed -i "/var SPEEDTEST_SERVERS = \\[/,/^[[:space:]]*];/c\\\t\tvar SPEEDTEST_SERVERS = \"$SERVER_LIST_URL_ESCAPED\";" /var/www/html/index-classic.html
+    sed -i "s/var SPEEDTEST_SERVERS = \"server-list.json\";/var SPEEDTEST_SERVERS = \"$SERVER_LIST_URL_ESCAPED\";/" /var/www/html/index.html
     sed -i "s/var SPEEDTEST_SERVERS = \"server-list.json\";/var SPEEDTEST_SERVERS = \"$SERVER_LIST_URL_ESCAPED\";/" /var/www/html/stability.html
   fi
 
@@ -120,18 +152,16 @@ if [[ "$MODE" == "frontend" || "$MODE" == "dual" ||  "$MODE" == "standalone" ]];
     TITLE_ONE_LINE=${TITLE_ONE_LINE//$'\n'/ }
     TITLE_HTML_ESCAPED=$(html_escape "$TITLE_ONE_LINE")
     TITLE_ESCAPED=$(sed_escape "$TITLE_HTML_ESCAPED")
-    sed -i "s/<title>LibreSpeed<\\/title>/<title>$TITLE_ESCAPED<\\/title>/g; s/<h1>LibreSpeed<\\/h1>/<h1>$TITLE_ESCAPED<\\/h1>/g" /var/www/html/index-classic.html
-    sed -i "s/<title>LibreSpeed<\\/title>/<title>$TITLE_ESCAPED<\\/title>/g" /var/www/html/index.html
-    sed -i "s/<title>LibreSpeed - Free and Open Source Speedtest<\\/title>/<title>$TITLE_ESCAPED - Free and Open Source Speedtest<\\/title>/g; s/<h1>Free and Open Source Speedtest\\.<\\/h1>/<h1>$TITLE_ESCAPED<\\/h1>/g" /var/www/html/index-modern.html
+    sed -i "s/<title>LibreSpeedex<\\/title>/<title>$TITLE_ESCAPED<\\/title>/g; s/<h1>Free and Open Source Speedtest\\.<\\/h1>/<h1>$TITLE_ESCAPED<\\/h1>/g" /var/www/html/index.html
   fi
 
-  # Replace modern page tagline if TAGLINE is set
+  # Replace the tagline if TAGLINE is set
   if [ -n "$TAGLINE" ]; then
     TAGLINE_ONE_LINE=${TAGLINE//$'\r'/}
     TAGLINE_ONE_LINE=${TAGLINE_ONE_LINE//$'\n'/ }
     TAGLINE_HTML_ESCAPED=$(html_escape "$TAGLINE_ONE_LINE")
     TAGLINE_ESCAPED=$(sed_escape "$TAGLINE_HTML_ESCAPED")
-    sed -i "s/<p class=\"tagline\">No Flash, No Java, No Websockets, No Bullsh\\*t<\\/p>/<p class=\"tagline\">$TAGLINE_ESCAPED<\\/p>/g" /var/www/html/index-modern.html
+    sed -i "s/<p class=\"tagline\">No Flash, No Java, No Websockets, No Bullsh\\*t<\\/p>/<p class=\"tagline\">$TAGLINE_ESCAPED<\\/p>/g" /var/www/html/index.html
   fi
 
   # Support legacy EMAIL env var as fallback for GDPR_EMAIL
@@ -146,16 +176,12 @@ if [[ "$MODE" == "frontend" || "$MODE" == "dual" ||  "$MODE" == "standalone" ]];
     # Escape special sed characters: & (replacement), / (delimiter), \ (escape), $ (variable)
     GDPR_EMAIL_ESCAPED=$(printf '%s\n' "$GDPR_EMAIL" | sed 's/[&/\\]/\\&/g; s/\$/\\$/g')
 
-    for html_file in /var/www/html/index-modern.html /var/www/html/index-classic.html; do
+    for html_file in /var/www/html/index.html; do
       if [ -f "$html_file" ]; then
         sed -i "s/TO BE FILLED BY DEVELOPER/$GDPR_EMAIL_ESCAPED/g; s/PUT@YOUR_EMAIL.HERE/$GDPR_EMAIL_ESCAPED/g" "$html_file"
       fi
     done
   fi
-fi
-# Configure design preference via config.json
-if [ "$USE_NEW_DESIGN" == "true" ]; then
-  sed -i 's/"useNewDesign": false/"useNewDesign": true/' /var/www/html/config.json
 fi
 
 # Apply Telemetry settings when running in standalone or frontend mode and telemetry is enabled
@@ -206,6 +232,27 @@ if [[ "$TELEMETRY" == "true" && ("$MODE" == "frontend" || "$MODE" == "standalone
 
   if [ "$REDACT_IP_ADDRESSES" == "true" ]; then
     sed -i s/\$redact_ip_addresses\ =\ .*\;/\$redact_ip_addresses\ =\ true\;/g /var/www/html/results/telemetry_settings.php
+  fi
+
+  # Retention and write limits from the environment. The defaults in the file
+  # already bound the table; these let an operator tighten or disable them.
+  {
+    echo ""
+    echo "// ---- rewritten from the container environment at startup ----"
+    if [[ "$TELEMETRY_RETENTION_DAYS" =~ ^[0-9]+$ ]]; then
+      echo "\$telemetry_retention_days = $TELEMETRY_RETENTION_DAYS;"
+    fi
+    if [[ "$TELEMETRY_RATE_LIMIT" =~ ^[0-9]+$ ]]; then
+      echo "\$telemetry_rate_limit_writes_per_hour = $TELEMETRY_RATE_LIMIT;"
+    fi
+    if [[ "$TELEMETRY_RATE_LIMIT_IP" =~ ^[0-9]+$ ]]; then
+      echo "\$telemetry_rate_limit_writes_per_hour_ip = $TELEMETRY_RATE_LIMIT_IP;"
+    fi
+  } >> /var/www/html/results/telemetry_settings.php
+
+  if [ -z "$PASSWORD" ] || [ "$PASSWORD" == "password" ]; then
+    echo "WARNING: telemetry is on but PASSWORD is unset or still the default." >&2
+    echo "         The admin panel stays closed until a real password is set." >&2
   fi
 
   mkdir -p /database/

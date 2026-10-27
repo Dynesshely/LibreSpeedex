@@ -1,0 +1,629 @@
+/**
+ * Records furniture.
+ *
+ * The "my records" page and the admin panel are the same object seen from two
+ * sides: a KPI strip, a table of runs, an expandable snapshot, a filter bar and
+ * a plot of the last 30 days. That shared vocabulary lives here; whatever only
+ * one of the two pages needs lives in mine-index.css / admin-index.css.
+ *
+ * Pure layout stays in Tailwind classes in the markup. This file carries what a
+ * class list cannot express: table hairlines, the two step confirms, the native
+ * controls (Tailwind's preflight is off, so a bare <input> would arrive in the
+ * browser's light theme) and the state indicators.
+ *
+ * The console frame around all of this comes from terminal.css; like
+ * `.status-bar` there, the blocks below only draw their own divider instead of
+ * a full box each.
+ */
+
+/* `hidden` has to beat the component `display` values declared below: the UA
+   rule for [hidden] loses to any author `display`, which would leave a "hidden"
+   KPI strip on screen. */
+[hidden] {
+  display: none !important;
+}
+
+/* The speed test caps the console so the instrument owns the viewport, and lets
+   it grow to fill one. A records page is a document: the frame ends where its
+   content does, so a short state (a login gate, a rate limited note) does not
+   leave half a screen of empty frame behind. */
+.console-page {
+  max-height: none;
+  flex: 0 0 auto;
+  text-align: left;
+}
+
+/* The blocks below stack straight onto each other inside the frame: each one
+   only draws its top hairline, and the frame itself closes the bottom. Handling
+   it here rather than per component also means a block that is hidden (the
+   state note, the detail panel) cannot leave a line behind. */
+.console-page > * + * {
+  border-top: 1px solid var(--panel-border-color);
+}
+
+/* The head of a framed block. Same vocabulary as `.chart-head` in
+   stability.css, which is page specific and so cannot be imported from here. */
+
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.2rem 2rem 1rem;
+  font-size: 1.15rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--secondary-text-color);
+}
+
+/* --------------------------------------------------------------- KPI strip */
+
+/* Same construction as `.readouts` in stability.css: auto-fit cells with the
+   hairline drawn per cell, because a fixed 1px gap shows through as a lighter
+   rectangle on the last, partly filled row. */
+
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+}
+
+.kpi {
+  padding: 1.6rem 2rem;
+  box-shadow: inset -1px -1px 0 0 var(--panel-border-color);
+}
+
+.kpi-label {
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--secondary-text-color);
+}
+
+.kpi-value {
+  margin-top: 0.6rem;
+  font-size: 2.6rem;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--primary-text-color);
+}
+
+/* Until a fetch reports, an empty cell shows a dash rather than nothing. */
+.kpi-value:empty::before {
+  content: "--";
+  color: var(--secondary-text-color);
+}
+
+.kpi-unit {
+  font-size: 1.1rem;
+  color: var(--secondary-text-color);
+}
+
+/* The two measured series keep their hue wherever they appear: accent for
+   download, teal for upload. Everything else stays on the grey ramp. */
+.kpi.is-dl .kpi-value {
+  color: var(--accent-color);
+}
+
+.kpi.is-ul .kpi-value {
+  color: var(--accent-alt-color);
+}
+
+/* ------------------------------------------------------------------- notes */
+
+/* Empty, error and rate limited states, plus the result of a maintenance
+   action. The state is carried by a small indicator light, the same object as
+   the header LED, instead of by tinted panels. */
+
+.note {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 1.6rem 2rem;
+  font-size: 1.4rem;
+  line-height: 2rem;
+  color: var(--secondary-text-color);
+  text-align: left;
+}
+
+.note-mark {
+  flex: 0 0 auto;
+  width: 0.9rem;
+  height: 0.9rem;
+  background-color: var(--secondary-text-color);
+  transform: translateY(-0.1rem);
+}
+
+.note-title {
+  color: var(--primary-text-color);
+}
+
+.note.is-busy .note-mark {
+  background-color: var(--accent-color);
+}
+
+.note.is-warn .note-mark {
+  background-color: var(--warn-color);
+}
+
+.note.is-error .note-mark {
+  background-color: var(--bad-color);
+}
+
+.note.is-ready .note-mark {
+  background-color: var(--accent-alt-color);
+}
+
+/* ---------------------------------------------------------------- controls */
+
+.btn {
+  padding: 0.9rem 2rem;
+  border: 1px solid var(--panel-border-color);
+  background: none;
+  color: var(--secondary-text-color);
+  text-decoration: none;
+  font-family: inherit;
+  font-size: 1.3rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s,
+    color 0.2s;
+
+  &:hover {
+    border-color: var(--panel-hover-border-color);
+    color: var(--primary-text-color);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgb(var(--crt-accent) / 70%);
+    outline-offset: 2px;
+  }
+
+  /* A disabled button is unlit, as the start button is while it waits for a
+     server. Hover must not light it back up. */
+  &:disabled {
+    cursor: default;
+    border-color: rgb(var(--crt-muted) / 35%);
+    background-color: rgb(var(--crt-muted) / 8%);
+    color: var(--primary-text-disabled-color);
+  }
+
+  &:disabled:hover {
+    border-color: rgb(var(--crt-muted) / 35%);
+    color: var(--primary-text-disabled-color);
+  }
+}
+
+/* The primary action. Same outlined ghost as the start button on the test
+   pages, so a "log in" and a "start" read as the same kind of object. */
+.btn-accent {
+  border-color: var(--button-border-color);
+  background-color: var(--button-ghost-color);
+  color: var(--accent-color);
+
+  &:hover {
+    border-color: var(--accent-color);
+    background-color: rgb(var(--crt-accent) / 15%);
+    color: var(--accent-color);
+  }
+}
+
+/* Destructive actions are the one place `bad` red appears outside a measurement:
+   it marks an outcome the user cannot undo. */
+.btn-bad {
+  border-color: rgb(var(--crt-bad) / 45%);
+  color: var(--bad-color);
+
+  &:hover {
+    border-color: var(--bad-color);
+    background-color: rgb(var(--crt-bad) / 10%);
+    color: var(--bad-color);
+  }
+}
+
+.btn-small {
+  padding: 0.5rem 1.2rem;
+  font-size: 1.2rem;
+}
+
+/* A confirm step that is armed: transient state, so it borrows the amber the
+   abort button uses. */
+.btn.is-confirming {
+  border-color: rgb(var(--crt-warn) / 65%);
+  background-color: rgb(var(--crt-warn) / 7%);
+  color: var(--warn-color);
+}
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.2rem;
+}
+
+/* Native controls. Values mirror the ones stability.css uses for its selects,
+   minus the 18rem minimum: these live in a filter bar, where a fixed minimum
+   would push fields onto their own line. */
+
+input[type="text"],
+input[type="search"],
+input[type="password"],
+input[type="date"],
+input[type="number"],
+select {
+  width: 100%;
+  padding: 0.8rem 1.2rem;
+  border: 1px solid var(--panel-border-color);
+  background-color: rgb(var(--crt-screen-deep) / 80%);
+  color: var(--primary-text-color);
+  font-family: inherit;
+  font-size: 1.4rem;
+  transition: border-color 0.2s;
+
+  &:hover {
+    border-color: var(--panel-hover-border-color);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgb(var(--crt-accent) / 70%);
+    outline-offset: 2px;
+  }
+}
+
+select {
+  cursor: pointer;
+}
+
+::placeholder {
+  color: var(--primary-text-disabled-color);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.field-label {
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--secondary-text-color);
+}
+
+.field-hint {
+  font-size: 1.15rem;
+  line-height: 1.7rem;
+  color: var(--secondary-text-color);
+}
+
+/* The filter bar: one row of labelled controls that wraps, with the actions
+   pushed to the far end. The field wrapper is `filter-field`, not `filter`:
+   `filter` is a Tailwind utility and the utilities are imported last. */
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 1.6rem 2rem;
+  padding: 2rem;
+}
+
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.filter-actions {
+  flex-direction: row;
+  align-items: center;
+  gap: 1.2rem;
+  margin-left: auto;
+}
+
+/* ------------------------------------------------------------------ tables */
+
+/* The scroll lives inside the frame, so a phone can slide the table sideways
+   without the page gaining a second horizontal scrollbar. */
+.records-frame {
+  overflow-x: auto;
+  background-color: rgb(var(--crt-screen) / 30%);
+}
+
+table.records {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 1.35rem;
+  text-align: left;
+}
+
+table.records th,
+table.records td {
+  padding: 0.9rem 1.2rem;
+  vertical-align: top;
+  border-bottom: 1px solid rgb(255 255 255 / 7%);
+  white-space: nowrap;
+}
+
+table.records thead th {
+  border-bottom-color: var(--panel-border-color);
+  background-color: rgb(var(--crt-screen-deep) / 92%);
+  font-size: 1.1rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--secondary-text-color);
+}
+
+table.records tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* Rows that open something are controls, so they take a caret, a pointer and a
+   keyboard focus ring. */
+table.records tr.is-clickable {
+  cursor: pointer;
+  transition: background-color 0.15s;
+
+  &:hover {
+    background-color: var(--panel-hover-background-color);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgb(var(--crt-accent) / 70%);
+    outline-offset: -2px;
+  }
+}
+
+table.records tr.is-open {
+  background-color: rgb(var(--crt-accent) / 7%);
+}
+
+.caret {
+  display: inline-block;
+  width: 1.2rem;
+  margin-right: 0.8rem;
+  color: rgb(var(--crt-accent) / 70%);
+  transition: transform 0.15s;
+
+  &::before {
+    content: "\25B8";
+  }
+}
+
+tr.is-open .caret {
+  transform: rotate(90deg);
+}
+
+.th-unit {
+  display: block;
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--primary-text-disabled-color);
+}
+
+td.num,
+th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Measured values keep their series colour in the table too. */
+.v-dl {
+  color: var(--accent-color);
+}
+
+.v-ul {
+  color: var(--accent-alt-color);
+}
+
+.dim {
+  color: var(--secondary-text-color);
+}
+
+.trunc {
+  display: inline-block;
+  max-width: 20rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+
+/* ------------------------------------------------------------------ panels */
+
+/* An expandable snapshot, inside the console frame. */
+.panel {
+  background-color: rgb(var(--crt-screen) / 30%);
+}
+
+.panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.2rem 2rem 1rem;
+  border-bottom: 1px solid var(--panel-border-color);
+  font-size: 1.15rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--secondary-text-color);
+}
+
+.panel-body {
+  padding: 1.6rem 2rem 2rem;
+}
+
+.sub-head {
+  margin-bottom: 1.2rem;
+  font-size: 1.15rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--secondary-text-color);
+}
+
+/* A key -> value snapshot. Two columns where there is room, one where there is
+   not; the hairlines are dashed so a snapshot never reads as a table. */
+.params {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(30rem, 1fr));
+  gap: 0 3.2rem;
+  font-size: 1.3rem;
+}
+
+.param {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1.6rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px dashed rgb(255 255 255 / 8%);
+}
+
+/* A field whose value is a paragraph (a raw ispinfo blob, a user agent) takes
+   the whole row instead of squeezing the fields next to it. */
+.param.is-wide {
+  grid-column: 1 / -1;
+}
+
+/* The key is a label, not prose: it must not break mid word just because the
+   value beside it is long. */
+.param-label {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  color: var(--secondary-text-color);
+}
+
+.param-value {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  color: var(--primary-text-color);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+/* The raw test log: still monospace, but held in its own scroll box so a long
+   run cannot stretch the page. */
+.log-view {
+  max-height: 24rem;
+  overflow: auto;
+  padding: 1.2rem 1.6rem;
+  border: 1px solid var(--panel-border-color);
+  background-color: rgb(var(--crt-screen-deep) / 70%);
+  font-size: 1.2rem;
+  line-height: 1.9rem;
+  color: var(--secondary-text-color);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------------------------------------------ charts */
+
+.chart-canvas-wrap {
+  position: relative;
+  min-height: 24rem;
+}
+
+.chart-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  background-color: rgb(var(--crt-screen-deep) / 60%);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.8rem 2.4rem;
+  padding: 1.2rem 2rem;
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--secondary-text-color);
+}
+
+/* --------------------------------------------------------------- paging/os */
+
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.2rem;
+  padding: 1.4rem 2rem;
+  font-size: 1.25rem;
+  color: var(--secondary-text-color);
+}
+
+.pager-actions {
+  display: flex;
+  gap: 1.2rem;
+  margin-left: auto;
+}
+
+/* -------------------------------------------------------------- login box */
+
+/* Only the admin page uses this today, but the gate is part of what both
+   record pages share, so it lives next to the table it guards. */
+
+.login-wrap {
+  padding: 3.2rem 2rem 3.6rem;
+}
+
+.login-box {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 3.2rem;
+  border: 1px solid var(--panel-border-color);
+  background-color: rgb(var(--crt-screen) / 55%);
+  box-shadow: inset 0 0 7rem rgb(var(--crt-accent) / 4%);
+}
+
+.login-hint {
+  margin: 1.2rem 0 2.4rem;
+  font-size: 1.3rem;
+  line-height: 2rem;
+  color: var(--secondary-text-color);
+}
+
+.login-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.2rem;
+  margin-top: 2.4rem;
+}
+
+/* --------------------------------------------------------------- utilities */
+
+/* The table captions carry real semantics but no visual weight, so they are
+   taken out of flow instead of being dropped. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .caret,
+  table.records tr.is-clickable {
+    transition: none;
+  }
+}

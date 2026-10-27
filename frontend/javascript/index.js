@@ -5,6 +5,8 @@
  * See https://github.com/librespeed/speedtest/issues/585
  */
 
+/* global Speedtest -- the engine, loaded from speedtest.js before this file */
+
 // States the UI can be in
 const INITIALIZING = 0;
 const READY = 1;
@@ -29,6 +31,9 @@ window.addEventListener("DOMContentLoaded", async () => {
   createSpeedtest();
   hookUpButtons();
   startRenderingLoop();
+  // The panel has to exist before settings.json lands: the server defaults
+  // become its base, and a visitor's stored choice is layered on top of that.
+  if (window.TestParams) window.TestParams.init();
   applySettingsJSON();
   applyServerListJSON();
 });
@@ -41,9 +46,13 @@ function createSpeedtest() {
   testState.speedtest.onupdate = (data) => {
     testState.testData = data;
     testState.testDataDirty = true;
+    // Feed the realtime plot (frontend/javascript/realtime-chart.js)
+    if (window.RealtimeChart) window.RealtimeChart.push(data);
   };
-  testState.speedtest.onend = (aborted) =>
-    (testState.state = aborted ? READY : FINISHED);
+  testState.speedtest.onend = (aborted) => {
+    testState.state = aborted ? READY : FINISHED;
+    if (window.RealtimeChart) window.RealtimeChart.end();
+  };
 }
 
 /**
@@ -82,9 +91,14 @@ function startButtonClickHandler() {
   switch (testState.state) {
     case READY:
     case FINISHED:
+      // Apply the current dials first: setParameter is only legal while the
+      // worker is idle, and a run must be recorded with the settings it used.
+      if (window.TestParams) window.TestParams.applyTo(testState.speedtest);
       testState.speedtest.start();
       testState.initialGaugeScrollPending = true;
       testState.state = RUNNING;
+      // New run: wipe the previous plot before the first samples arrive
+      if (window.RealtimeChart) window.RealtimeChart.begin();
       return;
     case RUNNING:
       testState.speedtest.abort();
@@ -154,9 +168,12 @@ async function applySettingsJSON() {
         settings[setting] != "false"
       ) {
         testState.telemetryEnabled = true;
-        document.querySelector("#privacy-warning").classList.remove("hidden");
+        document.querySelector("#privacy-notice").classList.remove("hidden");
+        document.querySelector("#my-results-link").classList.remove("hidden");
       }
     }
+    // Server defaults are the baseline the parameter panel starts from.
+    if (window.TestParams) window.TestParams.setBase(settings);
   } catch (error) {
     console.error("Failed to fetch settings:", error);
   }
@@ -308,6 +325,109 @@ function selectServer(server) {
 }
 
 /**
+ * Say where the traffic actually goes.
+ *
+ * The node name above this line is a label someone chose. This is the address
+ * the browser opens its sockets against, resolved from the selected node's own
+ * base URL — so it stays true whether the visitor arrived by LAN address, by
+ * public address or by hostname, and it needs nothing from the server to be
+ * correct.
+ *
+ * The detail line adds the part only the server can know: its own interface
+ * address, and the address the rest of the internet sees it as
+ * (backend/serverInfo.php). A node that does not offer that file simply shows
+ * the address and says so.
+ */
+async function refreshServerEndpoint() {
+  const addressEl = document.querySelector("#server-address");
+  if (!addressEl) return;
+
+  let server = null;
+  try {
+    server = testState.speedtest.getSelectedServer();
+  } catch (error) {
+    return; // no server selected yet
+  }
+  if (!server || !server.server) return;
+
+  let base;
+  try {
+    base = new URL(server.server, window.location.href);
+  } catch (error) {
+    return;
+  }
+
+  addressEl.textContent = base.host;
+
+  const detail = document.querySelector("#server-detail");
+  const toggle = document.querySelector("#server-detail-toggle");
+  const note = document.querySelector("#server-note");
+  const interfaceCell = document.querySelector("#server-interface");
+  const publicCell = document.querySelector("#server-public");
+  const protoCell = document.querySelector("#server-proto");
+
+  if (toggle.dataset.hooked !== "1") {
+    toggle.dataset.hooked = "1";
+    toggle.addEventListener("click", () => {
+      const open = detail.hidden;
+      detail.hidden = !open;
+      toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+  }
+
+  detail.hidden = true;
+  toggle.setAttribute("aria-expanded", "false");
+  note.textContent = "";
+  toggle.hidden = true;
+
+  let info = null;
+  try {
+    const infoUrl = new URL("serverInfo.php", base);
+    // A node on another origin only answers if we ask for CORS explicitly, on
+    // purpose: the same rule the rest of the backend follows.
+    if (base.host !== window.location.host) infoUrl.searchParams.set("cors", "true");
+    const response = await fetch(infoUrl, { cache: "no-store" });
+    if (response.ok) info = await response.json();
+  } catch (error) {
+    info = null; // an older node, a different server implementation, or CORS
+  }
+
+  const hostname = base.hostname;
+  const isIpLiteral =
+    /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname) || hostname.indexOf(":") !== -1;
+
+  const notes = [];
+  if (!isIpLiteral) {
+    notes.push("a hostname — your DNS decides which address that is");
+  }
+  if (info) {
+    toggle.hidden = false;
+    interfaceCell.textContent = info.interface || "not reported";
+    publicCell.textContent = info.public || "not available";
+    protoCell.textContent = info.proto || "—";
+
+    if (info.interface) {
+      notes.push(
+        info.interface === hostname
+          ? "this is the host's own interface"
+          : "forwarded — the host itself answers on " + info.interface
+      );
+    }
+    if (info.public) {
+      notes.push(
+        info.public === hostname
+          ? "this is the public address"
+          : "public egress is " + info.public
+      );
+    }
+  } else {
+    notes.push("this node does not report its addresses");
+  }
+
+  note.textContent = notes.join(" · ");
+}
+
+/**
  * Start the requestAnimationFrame UI rendering loop
  */
 function startRenderingLoop() {
@@ -317,14 +437,18 @@ function startRenderingLoop() {
   const sponsor = serverSelector.querySelector("#sponsor");
   const startButton = document.querySelector("#start-button");
   const privacyWarning = document.querySelector("#privacy-warning");
+  const headerStatus = document.querySelector("#header-status");
 
   const gauges = document.querySelectorAll("#download-gauge, #upload-gauge");
+  const gaugeLayout = document.querySelector(".gauge-layout");
+  const downloadGaugeEl = document.querySelector("#download-gauge");
+  const uploadGaugeEl = document.querySelector("#upload-gauge");
   const downloadProgress = document.querySelector("#download-gauge .progress");
   const uploadProgress = document.querySelector("#upload-gauge .progress");
   const downloadGauge = document.querySelector("#download-gauge .speed");
   const uploadGauge = document.querySelector("#upload-gauge .speed");
-  const downloadText = document.querySelector("#download-gauge span");
-  const uploadText = document.querySelector("#upload-gauge span");
+  const downloadText = document.querySelector("#download-speed");
+  const uploadText = document.querySelector("#upload-speed");
 
   const pingAndJitter = document.querySelectorAll(".ping, .jitter");
   const ping = document.querySelector("#ping");
@@ -340,6 +464,57 @@ function startRenderingLoop() {
     [FINISHED]: "Restart",
   };
 
+  // The status readout in the header, same four states
+  const statusTexts = {
+    [INITIALIZING]: "linking...",
+    [READY]: "terminal ready",
+    [RUNNING]: "test running",
+    [FINISHED]: "test complete",
+  };
+
+  /**
+   * Keep the instrument side of the UI in step with the live measurement: how
+   * bright each gauge burns, which direction is in focus, and how busy the
+   * pixel backdrop looks. Runs every frame, but only writes CSS variables and
+   * one data attribute, so the look itself stays in the stylesheets.
+   */
+  let activeDirection = "";
+
+  function updateInstrumentation() {
+    const data = testState.testData;
+    const measuring = testState.state === RUNNING;
+
+    const dlPower = measuring ? speedToPower(data && data.dlStatus) : 0;
+    const ulPower = measuring ? speedToPower(data && data.ulStatus) : 0;
+
+    if (downloadGaugeEl) {
+      downloadGaugeEl.style.setProperty("--gauge-glow", (dlPower * 0.9).toFixed(3));
+    }
+    if (uploadGaugeEl) {
+      uploadGaugeEl.style.setProperty("--gauge-glow", (ulPower * 0.9).toFixed(3));
+    }
+
+    // Focus follows activity - but only while a test is running: once it is
+    // finished, both gauges are the result and should read equally.
+    let direction = "";
+    if (measuring && data) {
+      const phase = Number(data.testState);
+      if (phase === 1) direction = "download";
+      else if (phase === 3) direction = "upload";
+    }
+
+    if (direction !== activeDirection) {
+      activeDirection = direction;
+      if (gaugeLayout) gaugeLayout.dataset.active = direction;
+    }
+
+    if (window.CrtBackground) {
+      const level =
+        direction === "download" ? dlPower : direction === "upload" ? ulPower : 0;
+      window.CrtBackground.setActivity(level, direction);
+    }
+  }
+
   // Show copy link button only if navigator.clipboard is available
   copyLink.classList.toggle("hidden", !navigator.clipboard);
 
@@ -348,6 +523,11 @@ function startRenderingLoop() {
     startButton.textContent = buttonTexts[testState.state];
     startButton.classList.toggle("disabled", testState.state === INITIALIZING);
     startButton.classList.toggle("active", testState.state === RUNNING);
+
+    // Mirror it in the header status readout
+    if (headerStatus) {
+      headerStatus.textContent = statusTexts[testState.state];
+    }
 
     // Disable the server selector while test is running
     serverSelector.classList.toggle("disabled", testState.state === RUNNING);
@@ -366,6 +546,7 @@ function startRenderingLoop() {
         sponsor.innerHTML = "&nbsp;";
       }
       testState.selectedServerDirty = false;
+      refreshServerEndpoint();
     }
 
     // Activate the gauges when test running or finished
@@ -375,6 +556,8 @@ function startRenderingLoop() {
         testState.state === RUNNING || testState.state === FINISHED
       )
     );
+
+    updateInstrumentation();
 
     if (
       testState.state === RUNNING &&
@@ -436,21 +619,10 @@ function startRenderingLoop() {
       ping.textContent = numberToText(testState.testData.pingStatus);
       jitter.textContent = numberToText(testState.testData.jitterStatus);
 
-      // Set user's IP and provider
+      // Set the client readout in the status bar. The "client" label and the
+      // placeholder live in the markup, so only the value is written here.
       if (testState.testData.clientIp) {
-        // Clear previous content
-        privacyWarning.innerHTML = '';
-
-        const connectedThrough = document.createElement('span');
-        connectedThrough.textContent = 'You are connected through:';
-  
-        const ipAddress = document.createTextNode(testState.testData.clientIp);
-
-        privacyWarning.appendChild(connectedThrough);
-        privacyWarning.appendChild(document.createElement('br'));
-        privacyWarning.appendChild(ipAddress);
-  
-        privacyWarning.classList.remove("hidden");
+        privacyWarning.textContent = testState.testData.clientIp;
       }
 
       // Set image for sharing results
@@ -474,6 +646,21 @@ function startRenderingLoop() {
   }
 
   renderUI();
+}
+
+/**
+ * Convert a speed in Mbits per second to a 0..1 "how hard is the link working"
+ * figure, on the same log scale the gauges use. Feeds the gauge bloom and the
+ * pixel backdrop, so the light on screen follows the measurement.
+ * @param {string} speed Speed in Mbits
+ * @returns {number} 0..1
+ */
+function speedToPower(speed) {
+  speed = Number(speed);
+  if (!(speed > 0)) return 0;
+
+  const logMax = Math.log10(10000 + 1); // 10 Gbps maxes out the gauge
+  return Math.max(0, Math.min(Math.log10(speed + 1) / logMax, 1));
 }
 
 /**

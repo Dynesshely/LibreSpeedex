@@ -1,10 +1,10 @@
 {
-  "name": "LibreSpeed",
-  "short_name": "LibreSpeed",
+  "name": "LibreSpeedex",
+  "short_name": "LibreSpeedex",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#000000",
+  "background_color": "#0a0b0d",
+  "theme_color": "#0a0b0d",
   "icons": [
     {
       "src": "images/icon-192.png",

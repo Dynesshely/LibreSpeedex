@@ -1,0 +1,343 @@
+/**
+ * The stability test page.
+ *
+ * Imports the same screen and glass as the speed test page, then adds only the
+ * components this page needs. Anything that is pure layout lives in Tailwind
+ * classes in the markup; this file holds what a utility class cannot express
+ * (native control styling, the console's internal grid, the verdict colours).
+ */
+
+@import url("screen.css");
+@import url("colors.css");
+@import url("fonts.css");
+@import url("crt.css");
+@import url("terminal.css");
+@import url("tailwind.css");
+
+/* ---------------------------------------------------------------- controls */
+
+/* Native controls need explicit styling: Tailwind's preflight is off, so a
+   bare <select> would otherwise arrive in the browser's light theme. */
+
+.console-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 2rem;
+  padding: 2rem 2rem 2.4rem;
+  border-bottom: 1px solid var(--panel-border-color);
+  text-align: left;
+}
+
+select {
+  min-width: 18rem;
+  padding: 0.8rem 1.2rem;
+
+  border: 1px solid var(--panel-border-color);
+  background-color: rgb(var(--crt-screen-deep) / 80%);
+  color: var(--primary-text-color);
+
+  font-family: inherit;
+  font-size: 1.4rem;
+  cursor: pointer;
+  transition: border-color 0.2s;
+
+  &:hover {
+    border-color: var(--panel-hover-border-color);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgb(var(--crt-accent) / 70%);
+    outline-offset: 2px;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.field-label {
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--secondary-text-color);
+}
+
+.field-actions {
+  flex-direction: row;
+  align-items: center;
+  gap: 1.2rem;
+  margin-left: auto;
+}
+
+/* The start / abort control is a div whose label comes from CSS content, and
+   whose state the page script sets as a class. */
+
+#startBtn {
+  min-width: 15rem;
+  padding: 1.2rem 3rem;
+
+  border: 1px solid var(--button-border-color);
+  background-color: var(--button-ghost-color);
+  color: var(--accent-color);
+
+  font-size: 1.6rem;
+  letter-spacing: 0.02em;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+
+  &::before {
+    content: "Start";
+  }
+
+  &:hover {
+    border-color: var(--accent-color);
+    background-color: rgb(var(--crt-accent) / 15%);
+  }
+
+  &.finding::before {
+    content: "Finding...";
+  }
+
+  &.disabled {
+    cursor: default;
+    border-color: rgb(var(--crt-muted) / 35%);
+    background-color: rgb(var(--crt-muted) / 8%);
+    color: var(--primary-text-disabled-color);
+
+    &:hover {
+      border-color: rgb(var(--crt-muted) / 35%);
+      background-color: rgb(var(--crt-muted) / 8%);
+    }
+  }
+
+  /* Same running treatment as the speed test button: outlined amber, plus a
+     blinking block. The label comes from ::before here, so the block is on
+     ::after. */
+  &.running {
+    border-color: rgb(var(--crt-warn) / 65%);
+    background-color: rgb(var(--crt-warn) / 7%);
+    color: var(--warn-color);
+
+    &::before {
+      content: "Abort";
+    }
+
+    &::after {
+      content: "";
+      display: inline-block;
+      width: 0.8rem;
+      height: 0.8rem;
+      margin-left: 1rem;
+      vertical-align: baseline;
+      background-color: currentColor;
+      animation: term-blink 1.1s steps(2, jump-none) infinite;
+    }
+
+    &:hover {
+      border-color: rgb(var(--crt-warn) / 85%);
+      background-color: rgb(var(--crt-warn) / 12%);
+    }
+  }
+}
+
+#resetBtn {
+  padding: 1.2rem 2.4rem;
+  border: 1px solid var(--panel-border-color);
+  color: var(--secondary-text-color);
+  font-size: 1.4rem;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+
+  &:hover {
+    border-color: var(--panel-hover-border-color);
+    color: var(--primary-text-color);
+  }
+}
+
+/* ---------------------------------------------------------------- readouts */
+
+.readouts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  border-bottom: 1px solid var(--panel-border-color);
+}
+
+.readout {
+  padding: 1.6rem 1.2rem;
+  text-align: center;
+  /* Hairlines drawn per cell rather than with a 1px grid gap over a light
+     container: seven readouts never fill the last row, and the empty track
+     showed through as a lighter rectangle. */
+  box-shadow: inset -1px -1px 0 0 var(--panel-border-color);
+}
+
+.readout-label {
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--secondary-text-color);
+}
+
+.readout-value {
+  margin-top: 0.6rem;
+  font-size: 2.6rem;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--primary-text-color);
+}
+
+/* The page script leaves these empty until a test reports; show a dash rather
+   than an empty cell. */
+.readout-value:empty::before {
+  content: "--";
+  color: var(--secondary-text-color);
+}
+
+.readout-unit {
+  font-size: 1.1rem;
+  color: var(--secondary-text-color);
+}
+
+/* ------------------------------------------------------------------- chart */
+
+#chartContainer {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  border-bottom: 1px solid var(--panel-border-color);
+}
+
+.chart-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.2rem 2rem 1rem;
+  border-bottom: 1px solid var(--panel-border-color);
+  font-size: 1.15rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+#pingChart {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  background-color: rgb(var(--crt-screen-deep) / 60%);
+}
+
+/* ---------------------------------------------------------- optional bits */
+
+#optionalControls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1.2rem 2.4rem;
+  font-size: 1.3rem;
+  color: var(--secondary-text-color);
+}
+
+#optionalControls label {
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+input[type="range"] {
+  width: 18rem;
+  height: 1.6rem;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+
+  &::-webkit-slider-runnable-track {
+    height: 2px;
+    background: rgb(var(--crt-ink) / 25%);
+  }
+  &::-webkit-slider-thumb {
+    appearance: none;
+    width: 1.2rem;
+    height: 1.2rem;
+    margin-top: -0.5rem;
+    background: var(--accent-color);
+  }
+  &::-moz-range-track {
+    height: 2px;
+    background: rgb(var(--crt-ink) / 25%);
+  }
+  &::-moz-range-thumb {
+    width: 1.2rem;
+    height: 1.2rem;
+    border: 0;
+    border-radius: 0;
+    background: var(--accent-color);
+  }
+}
+
+#thresholdValue {
+  min-width: 4rem;
+  color: var(--primary-text-color);
+  font-variant-numeric: tabular-nums;
+}
+
+#downloadCsvBtn {
+  padding: 0.8rem 2rem;
+  border: 1px solid var(--panel-border-color);
+  background: none;
+  color: var(--secondary-text-color);
+  font-family: inherit;
+  font-size: 1.3rem;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+
+  &:hover {
+    border-color: var(--panel-hover-border-color);
+    color: var(--primary-text-color);
+  }
+}
+
+/* ----------------------------------------------------------------- verdict */
+
+#rating {
+  font-size: 1.6rem;
+  letter-spacing: 0.04em;
+
+  /* `none` is the resting state; the page script swaps in the others. */
+  &.none {
+    color: var(--secondary-text-color);
+  }
+  &.great {
+    color: var(--accent-alt-color);
+  }
+  &.good {
+    color: rgb(var(--crt-alt) / 80%);
+  }
+  &.poor {
+    color: var(--warn-color);
+  }
+  &.bad {
+    color: var(--bad-color);
+  }
+}
+
+/* The server picker inside the status strip: the strip draws the frame, so the
+   control sits flush in it. */
+#serverArea {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+
+  & select {
+    min-width: 0;
+    font-size: 1.5rem;
+  }
+}

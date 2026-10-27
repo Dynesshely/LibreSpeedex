@@ -4,7 +4,7 @@ const { baseUrls } = require("./helpers/env");
 test.use({ viewport: { width: 360, height: 800 } });
 
 async function openResultImage(page, width, height) {
-  await page.goto(`${baseUrls.standaloneNew}/index-modern.html`);
+  await page.goto(`${baseUrls.standaloneNew}/index.html`);
 
   await page.locator("#results").evaluate(
     (image, dimensions) => {
