@@ -1,7 +1,7 @@
 # LibreSpeedex telemetry data layer + JSON APIs — test report
 
 Date: 2026-10-04
-Repo: `/home/dynesshely/dsh-workspaces/tools/speedtest`
+Repo: `<repo>`
 PHP under test: `librespeedex:local` → PHP 8.5.11 (CLI), code kept PHP 7.4-syntax compatible.
 DB actually exercised end-to-end: **sqlite** (the image has `pdo_sqlite`; see *Open questions* for mysql/pgsql/mssql).
 
@@ -37,7 +37,7 @@ The real `idObfuscation.php` still resolves from `results/` next to the real `te
 ## 1.1 Syntax check (all changed PHP files)
 
 ```
-$ cd /home/dynesshely/dsh-workspaces/tools/speedtest
+$ cd <repo>
 $ for f in results/telemetry_db.php results/telemetry_guard.php results/telemetry.php results/mine.php results/admin_api.php results/telemetry_settings.php; do
     docker run --rm -v "$PWD":/src -w /src librespeedex:local php -l "$f"
   done
@@ -57,7 +57,7 @@ No syntax errors detected in results/telemetry_settings.php
 $ docker run --rm -v "$PWD":/src -w /src librespeedex:local php .scratch/telemetry-test/run.php
 ```
 
-The container sees the repo root as `/src`, so the paths in the output below are the container view of `/home/dynesshely/dsh-workspaces/tools/speedtest`.
+The container sees the repo root as `/src`, so the paths in the output below are the container view of `<repo>`.
 
 Full observed output (`164` `[PASS]`, `0` `[FAIL]`, exit code 0), also saved as `.scratch/telemetry-test/cli-output.txt`:
 

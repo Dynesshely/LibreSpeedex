@@ -108,7 +108,7 @@ Behaviour probes:
   `showing 1–50 of 240` → `showing 1–50 of 239`, note "record deleted 1 row
   removed.", no page errors.
 * **Delete confirm** — the confirm row names the record
-  ("Delete test #4000 recorded 2026-10-04 02:55:46 from 10.0.21.135? The server
+  ("Delete test #4000 recorded 2026-10-04 02:55:46 from 203.0.113.42? The server
   will not keep a copy."); confirming removes exactly one row, cancelling leaves
   the total at 240.
 * **Purge** — both blocks refuse an untyped confirmation and say what to type;

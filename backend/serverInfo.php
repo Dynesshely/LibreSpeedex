@@ -113,7 +113,7 @@ $host = isset($_SERVER['HTTP_HOST']) ? (string) $_SERVER['HTTP_HOST'] : '';
 $hostName = $host;
 $hostPort = '';
 
-// Split "10.0.30.61:18100" and "[fe80::1]:8080" into their two halves.
+// Split "192.168.x.x:8080" and "[fe80::1]:8080" into their two halves.
 if (preg_match('/^\[(.+)\]:(\d+)$/', $host, $m) === 1) {
     $hostName = $m[1];
     $hostPort = $m[2];

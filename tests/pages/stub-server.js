@@ -50,6 +50,14 @@ function random() {
   return seed / 2147483648;
 }
 
+/* Fixture addresses come from the RFC 5737 documentation ranges. They are
+   reserved for examples, so a screenshot of the admin panel can never show a
+   real person's address - and never a plausible internal allocation either. */
+function docIp(random) {
+  const block = ["192.0.2", "198.51.100", "203.0.113"][Math.floor(random() * 3)];
+  return block + "." + (2 + Math.floor(random() * 253));
+}
+
 function between(low, high, digits) {
   return (low + random() * (high - low)).toFixed(digits === undefined ? 2 : digits);
 }
@@ -114,7 +122,7 @@ const DB = (function () {
             processedString: isp.processedString,
             rawISPInfo: isp.rawISPInfo,
             rawISPInfoBare: isp.rawISPInfo,
-            ip: "10.0." + (20 + Math.floor(random() * 40)) + "." + (2 + Math.floor(random() * 200))
+            ip: docIp(random)
           })
         : "Unknown ISP, raw backend blob that never parsed as JSON, " + isp.rawISPInfo;
     rows.push({
@@ -126,7 +134,7 @@ const DB = (function () {
         Math.floor(random() * 60),
         Math.floor(random() * 60)
       ),
-      ip: "10.0." + (20 + Math.floor(random() * 40)) + "." + (2 + Math.floor(random() * 200)),
+      ip: docIp(random),
       ispinfo: ispinfo,
       ua: UAS[Math.floor(random() * UAS.length)],
       lang: ["en-US", "nl-NL", "de-DE", "fr-FR"][Math.floor(random() * 4)],
