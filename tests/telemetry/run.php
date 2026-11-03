@@ -428,12 +428,12 @@ function case_validators()
 
     // Backwards compatibility with the pre-change signature: the 11th
     // argument is $returnExceptionOnError, as sanitycheck.php still calls it.
-    $legacyId = insertSpeedtestUser('10.3.3.1', '', '', 'UA', 'en', '1', '1', '1', '1', 'log', true);
+    $legacyId = insertSpeedtestUser('192.0.2.11', '', '', 'UA', 'en', '1', '1', '1', '1', 'log', true);
     t_check(!($legacyId instanceof Exception) && false !== $legacyId, 'legacy 11-argument call still inserts');
     $legacyRow = getSpeedtestUserById($legacyId);
     t_check(null === $legacyRow['client_id'], 'legacy boolean 11th argument is not stored as client_id');
 
-    $explicit = insertSpeedtestUser('10.3.3.2', '', '', 'UA', 'en', '1', '1', '1', '1', 'log', 'legacyflag1111', null, true);
+    $explicit = insertSpeedtestUser('192.0.2.12', '', '', 'UA', 'en', '1', '1', '1', '1', 'log', 'legacyflag1111', null, true);
     t_check(!($explicit instanceof Exception) && false !== $explicit, 'new 13-argument call still inserts');
     t_eq(getSpeedtestUserById($explicit)['client_id'], 'legacyflag1111', 'client_id is stored for the 13-argument call');
 
