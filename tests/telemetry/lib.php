@@ -235,7 +235,7 @@ function t_create_old_schema_db($file)
          VALUES (?,?,?,?,?,?,?,?,?,?)'
     );
     $stmt->execute([
-        '10.9.9.9',
+        '192.0.2.9',
         '{"processedString":"Legacy ISP (NL) - 3 km","hostname":"legacy.example"}',
         '{"legacy":true}',
         'LegacyUA/1.0',

@@ -86,7 +86,7 @@ function case_migrate()
 
     $legacy = getSpeedtestUserById($legacyId);
     t_check(is_array($legacy), 'the pre-existing row is still readable');
-    t_eq($legacy['ip'], '10.9.9.9', 'legacy row ip survived');
+    t_eq($legacy['ip'], '192.0.2.9', 'legacy row ip survived');
     t_eq($legacy['ua'], 'LegacyUA/1.0', 'legacy row ua survived');
     t_eq($legacy['log'], 'legacy log line', 'legacy row log survived');
     t_eq($legacy['dl'], '12.50', 'legacy row dl survived');
@@ -94,7 +94,7 @@ function case_migrate()
     t_check(null === $legacy['client_id'], 'legacy row client_id is NULL');
     t_check(null === $legacy['params'], 'legacy row params is NULL');
 
-    $id = t_insert('ClientA1234', '10.0.0.1', '{"processedString":"New ISP (NL) - 1 km"}', '{"x":1}', '91.20', '42.10', '12.40', '1.20', 'ModernUA/2.0', 'modern log', '{"time_dl_max":"12"}');
+    $id = t_insert('ClientA1234', '192.0.2.1', '{"processedString":"New ISP (NL) - 1 km"}', '{"x":1}', '91.20', '42.10', '12.40', '1.20', 'ModernUA/2.0', 'modern log', '{"time_dl_max":"12"}');
     t_check(!($id instanceof Exception) && false !== $id, 'insert with client_id + params succeeds');
 
     $row = getSpeedtestUserById($id);
@@ -118,11 +118,11 @@ function case_queries()
     $clientA = 'aaaaaaaaaaaa1111';
     $clientB = 'bbbbbbbbbbbb2222';
 
-    $f1 = t_insert($clientA, '10.0.0.1', '{"processedString":"ISP One (NL) - 3 km"}', '{"alpha":1}', '100', '10', '5', '0.5', 'Firefox');
-    $f2 = t_insert($clientA, '10.0.0.2', '{"processedString":"ISP One (NL) - 4 km"}', '{"beta":2}', '50', '20', '15', '1.5', 'Chrome');
-    $f3 = t_insert($clientB, '10.0.0.3', '{"processedString":"ISP Two (DE) - 9 km"}', '{"gamma":3}', '30', '30', '25', '2.5', 'Safari');
+    $f1 = t_insert($clientA, '192.0.2.1', '{"processedString":"ISP One (NL) - 3 km"}', '{"alpha":1}', '100', '10', '5', '0.5', 'Firefox');
+    $f2 = t_insert($clientA, '192.0.2.2', '{"processedString":"ISP One (NL) - 4 km"}', '{"beta":2}', '50', '20', '15', '1.5', 'Chrome');
+    $f3 = t_insert($clientB, '192.0.2.3', '{"processedString":"ISP Two (DE) - 9 km"}', '{"gamma":3}', '30', '30', '25', '2.5', 'Safari');
     $f4 = t_insert($clientB, '192.168.1.9', '{"processedString":"ISP Three"}', '100%_literal', '5', '1', '2', '0.2', 'Chrome');
-    $f5 = t_insert($clientA, '10.0.0.5', 'plain text isp', '100Xliteral', '1', '2', '3', '0.3', 'Edge');
+    $f5 = t_insert($clientA, '192.0.2.5', 'plain text isp', '100Xliteral', '1', '2', '3', '0.3', 'Edge');
 
     t_set_timestamp($env['db'], $f1, '2026-02-10 10:00:00');
     t_set_timestamp($env['db'], $f2, '2026-02-14 10:00:00');
@@ -134,10 +134,10 @@ function case_queries()
     t_eq(countSpeedtestUsers(['client_id' => $clientA]), 3, 'count scoped to client A');
     t_eq(countSpeedtestUsers(['client_id' => $clientB]), 2, 'count scoped to client B');
     t_eq(countSpeedtestUsers(['client_id' => 'doesnotexist0000']), 0, 'count of unknown client');
-    t_eq(countSpeedtestUsers(['ip' => '10.0.0.2']), 1, 'ip filter is exact');
+    t_eq(countSpeedtestUsers(['ip' => '192.0.2.2']), 1, 'ip filter is exact');
     t_eq(countSpeedtestUsers(['q' => 'Chrome']), 2, 'q matches user agent');
     t_eq(countSpeedtestUsers(['q' => 'gamma']), 1, 'q matches extra');
-    t_eq(countSpeedtestUsers(['q' => '10.0.0.3']), 1, 'q matches ip');
+    t_eq(countSpeedtestUsers(['q' => '192.0.2.3']), 1, 'q matches ip');
     t_eq(countSpeedtestUsers(['q' => $clientB]), 2, 'q matches client_id');
     t_eq(countSpeedtestUsers(['q' => '100%_literal']), 1, 'q escapes LIKE wildcards');
     t_eq(countSpeedtestUsers(['q' => 'nothing-matches-this']), 0, 'q without match');
@@ -200,11 +200,11 @@ function case_stats()
     $yesterday = gmdate('Y-m-d', time() - 86400).' 08:00:00';
     $longAgo = gmdate('Y-m-d H:i:s', time() - 40 * 86400);
 
-    $r1 = t_insert($clientA, '10.0.0.1', '{"processedString":"ISP One"}', '', '100', '10', '5', '0.5');
-    $r2 = t_insert($clientA, '10.0.0.1', '{"processedString":"ISP One"}', '', '50', '20', '15', '1.5');
-    $r3 = t_insert($clientB, '10.0.0.2', '{"processedString":"ISP Two"}', '', '30', '30', '25', '2.5');
-    $r4 = t_insert($clientC, '10.0.0.3', '', '', '', '', '', '');
-    $r5 = t_insert(null, '10.0.0.4', '', '', '10', '5', '1', '0.1');
+    $r1 = t_insert($clientA, '192.0.2.1', '{"processedString":"ISP One"}', '', '100', '10', '5', '0.5');
+    $r2 = t_insert($clientA, '192.0.2.1', '{"processedString":"ISP One"}', '', '50', '20', '15', '1.5');
+    $r3 = t_insert($clientB, '192.0.2.2', '{"processedString":"ISP Two"}', '', '30', '30', '25', '2.5');
+    $r4 = t_insert($clientC, '192.0.2.3', '', '', '', '', '', '');
+    $r5 = t_insert(null, '192.0.2.4', '', '', '10', '5', '1', '0.1');
 
     t_set_timestamp($env['db'], $r1, $today);
     t_set_timestamp($env['db'], $r2, $today);
@@ -262,9 +262,9 @@ function case_delete_purge()
     $env = t_boot('delete_purge');
     t_check(getPdo() instanceof PDO, 'schema ready');
 
-    $old = t_insert('ffffffffffff1111', '10.1.1.1', '', '', '1', '1', '1', '1');
-    $new1 = t_insert('ffffffffffff2222', '10.1.1.2', '', '', '2', '2', '2', '2');
-    $new2 = t_insert('ffffffffffff3333', '10.1.1.3', '', '', '3', '3', '3', '3');
+    $old = t_insert('ffffffffffff1111', '203.0.113.1', '', '', '1', '1', '1', '1');
+    $new1 = t_insert('ffffffffffff2222', '203.0.113.2', '', '', '2', '2', '2', '2');
+    $new2 = t_insert('ffffffffffff3333', '203.0.113.3', '', '', '3', '3', '3', '3');
     t_set_timestamp($env['db'], $old, gmdate('Y-m-d H:i:s', time() - 100 * 86400));
     t_set_timestamp($env['db'], $new2, gmdate('Y-m-d H:i:s', time() - 86400));
     t_eq(countSpeedtestUsers([]), 3, 'three fixture rows');
@@ -360,8 +360,8 @@ function case_retention()
     $env = t_boot('retention');
     t_check(getPdo() instanceof PDO, 'schema ready');
 
-    $expired = t_insert('9999999999991111', '10.2.2.1', '', '', '1', '1', '1', '1');
-    $recent = t_insert('9999999999992222', '10.2.2.2', '', '', '2', '2', '2', '2');
+    $expired = t_insert('9999999999991111', '198.51.100.1', '', '', '1', '1', '1', '1');
+    $recent = t_insert('9999999999992222', '198.51.100.2', '', '', '2', '2', '2', '2');
     t_set_timestamp($env['db'], $expired, gmdate('Y-m-d H:i:s', time() - 100 * 86400));
     t_set_timestamp($env['db'], $recent, gmdate('Y-m-d H:i:s', time() - 86400));
 
