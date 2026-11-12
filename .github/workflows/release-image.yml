@@ -1,0 +1,95 @@
+name: Release image
+
+# Release path: pushing a version tag (vX.Y.Z) builds the PHP/Apache image and
+# the Alpine variant, then publishes both to GitHub Container Registry (GHCR).
+#
+# Branch and pull-request builds stay in docker-publish.yml, which keeps the
+# Playwright gate. This workflow deliberately has no e2e job: the e2e suite
+# needs its own multi-service compose stack, and a release should be published
+# (or fail) on the image build itself.
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - dockerfile: ./Dockerfile
+            flavour: ""
+          - dockerfile: ./Dockerfile.alpine
+            flavour: "-alpine"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # Fetch the ipinfo database file using curl if the API key is defined.
+      - name: Fetch DB from ipinfo.io
+        run: |
+          if [ -z "${{ secrets.IPINFO_APIKEY }}" ]; then
+            echo "Warning: IPINFO_APIKEY is not defined."
+          else
+            curl -L "https://ipinfo.io/data/free/country_asn.mmdb?token=${{ secrets.IPINFO_APIKEY }}" -o backend/country_asn.mmdb
+          fi
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log into registry ${{ env.REGISTRY }}
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}
+          # Semver tags come from the pushed tag: v6.3.0 -> 6.3.0, 6.3, 6.
+          # The latest pointer only follows stable tags, so a v6.4.0-rc1 release
+          # does not move the stable pointer.
+          tags: |
+            type=semver,pattern={{version}},suffix=${{ matrix.flavour }}
+            type=semver,pattern={{major}}.{{minor}},suffix=${{ matrix.flavour }}
+            type=semver,pattern={{major}},suffix=${{ matrix.flavour }}
+            type=raw,value=latest,suffix=${{ matrix.flavour }},enable=${{ startsWith(github.ref, 'refs/tags/') && !contains(github.ref, '-') }}
+          # Point the published package at the fork, not at the upstream project
+          # whose labels are baked into the Dockerfiles.
+          labels: |
+            org.opencontainers.image.title=LibreSpeedex
+            org.opencontainers.image.description=Self-hosted speed test with a terminal / CRT interface, forked from LibreSpeed.
+            org.opencontainers.image.url=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.documentation=${{ github.server_url }}/${{ github.repository }}/blob/dev/doc_docker.md
+            org.opencontainers.image.vendor=LibreSpeedex
+            org.opencontainers.image.licenses=LGPL-3.0-or-later
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
