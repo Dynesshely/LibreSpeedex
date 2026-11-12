@@ -13,7 +13,7 @@ on:
     # is built exactly once (and is not gated by this workflow's e2e job).
     branches: ["*"]
   pull_request:
-    branches: [master]
+    branches: [main, dev]
 
 env:
   # Use docker.io for Docker Hub if empty
@@ -23,9 +23,11 @@ env:
 
 jobs:
   # Keep e2e in this workflow so Docker image build/push is hard-gated by test success.
-  # Do not move automatic e2e back to playwright.yml, otherwise master pushes run duplicate e2e jobs.
+  # Do not move automatic e2e back to playwright.yml, otherwise main / dev pushes run duplicate e2e jobs.
   e2e:
-    runs-on: ubuntu-latest
+    # Playwright 1.59.x supports Ubuntu 22.04 / 24.04 only; ubuntu-latest now
+    # resolves to 26.04, where `playwright install` refuses to install browsers.
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
 
     steps:

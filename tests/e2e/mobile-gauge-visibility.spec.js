@@ -1,7 +1,10 @@
 const { test, expect } = require("@playwright/test");
 const { modernStartButton } = require("./helpers/ui");
 
-test.use({ viewport: { width: 390, height: 560 } });
+// The compact terminal layout fits the gauges on a portrait phone, so exercise
+// the scroll-into-view path on a landscape phone, where the gauge still starts
+// below the fold.
+test.use({ viewport: { width: 740, height: 360 } });
 
 test.describe("Mobile gauge visibility", () => {
   test("keeps the active gauge visible after pressing Start", async ({ page }) => {
